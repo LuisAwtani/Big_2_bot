@@ -95,8 +95,8 @@ class Algorithm:
             elif len(singles) > 0:    #else play (second weakest) single card
                 weakest = 52
                 for x in singles:
-                    if self.S(singles) < weakest:
-                        weakest = self.S(singles)
+                    if self.S(x) < weakest:
+                        weakest = self.S(x)
                         action = [x]
 
 
@@ -123,8 +123,6 @@ class Algorithm:
                 print(f"Cards to beat: {state.toBeat.cards}")
                 
                 play = [pairs[0][0], pairs[0][1]]
-                print(f"Attempting to play: {play}")
-
                 action = play
     
         # If the trick size is 2, 3, or 5, I will pass
