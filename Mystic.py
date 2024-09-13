@@ -34,13 +34,13 @@ class Algorithm:
         Queue = []
         # Look for pairs 
         ## NOTE: Currently producing suboptimal pairs: change logic later
-        pairlist = [[0, -1]] * 13  # tracks [quantity, card] Index of cards in order of 2, K, Q, ..., 3
+        pairlist = [[0, -1] for _ in range(13)]  # tracks [quantity, card] Index of cards in order of 2, K, Q, ..., 3
         for Scard in Ssingles:
             idx = Scard // 4
             pairlist[idx][0] += 1
-            print(f"Found a {Scard} with index {idx}")
+            print(f"Found a {Scard} with index {idx}. \n pairlist is now {pairlist}")
+            
             if pairlist[idx][0] == 2: # If we got a pair, find S value of twin, and move both to Queue
-                print(f"Found pair {pairlist}")
                 if Scard < pairlist[idx][1]:
                     Queue.append((Scard, pairlist[idx][1]))
                 else:
