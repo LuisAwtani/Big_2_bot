@@ -1,4 +1,4 @@
-# Currently working Flag: ON
+# Currently working Flag: OFF
 from classes import *
 
 class Algorithm:
@@ -34,18 +34,19 @@ class Algorithm:
         Queue = []
         # Look for pairs 
         ## NOTE: Currently producing suboptimal pairs: change logic later
-        pairlist = [[0, 0]] * 13  # tracks quantity, Index of cards in order of 2, K, Q, ..., 3
+        pairlist = [[0, -1]] * 13  # tracks [quantity, card] Index of cards in order of 2, K, Q, ..., 3
         for Scard in Ssingles:
             idx = Scard // 4
             pairlist[idx][0] += 1
             if pairlist[idx][0] == 2: # If we got a pair, find S value of twin, and move both to Queue
                 if Scard < pairlist[idx][1]:
-                    Queue.append(Scard, pairlist[idx][1])
+                    Queue.append((Scard, pairlist[idx][1]))
                 else:
-                    Queue.append(pairlist[idx][1], Scard)
+                    Queue.append((pairlist[idx][1], Scard))
         
         # Move cards in Queue out of single list (to avoid loop iteration bug in earlier loop)
         for x in Queue:
+            print(f"Trying to remove: {x} from singles: {Ssingles}")
             Ssingles.remove(x[0])
             Ssingles.remove(x[1])
             if x[0] < x[1]:
