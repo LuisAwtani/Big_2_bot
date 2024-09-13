@@ -110,7 +110,7 @@ class Algorithm:
                 choices.sort()
                 if len(choices) > 2:
                     action.append(self.inverseS(choices[-2])) # Play second weakest card
-                else:
+                elif len(choices) != 0:
                     action.append(self.inverseS(choices[-1])) ## PLay weakest card, update when 
         
         # If trick size is 2, try to play a pair              ## relative S function exists
