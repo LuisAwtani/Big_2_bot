@@ -30,22 +30,29 @@ class Algorithm:
         Spairs = []
 
         # Scan hand tricks, return combination with fewest singles NOTE: Currently only returns singles and pairs
-        changes = 1
-        while (changes > 0): # until 0 tricks found
-            changes = 0
 
-            # Look for pairs
-            pairlist = [0] * 13  # tracks quantity, Index of cards in order of 2, K, Q, ..., 3
-            for Scard in Ssingles:
-                idx = Scard // 4
-                pairlist[idx] += 1
-                if pairlist[idx] == 2: # If we got a pair, find S value of twin, and move both from singles to pairs
-                    changes += 1
-                    for Stwin in Ssingles: 
-                        if (Stwin // 4) == (Scard // 4):
-                            Ssingles.remove(Scard)
-                            Ssingles.remove(Stwin)
-                            Spairs.append((Scard, Stwin)) # Append pair as a tuple
+        Queue = []
+        # Look for pairs 
+        ## NOTE: Currently producing suboptimal pairs: change logic later
+        pairlist = [[0, 0]] * 13  # tracks quantity, Index of cards in order of 2, K, Q, ..., 3
+        for Scard in Ssingles:
+            idx = Scard // 4
+            pairlist[idx][0] += 1
+            if pairlist[idx][0] == 2: # If we got a pair, find S value of twin, and move both to Queue
+                if Scard < pairlist[idx][1]:
+                    Queue.append(Scard, pairlist[idx][1])
+                else:
+                    Queue.append(pairlist[idx][1], Scard)
+        
+        # remaining cards are singles
+        for x in Queue:
+            Ssingles.remove(x[0])
+            Ssingles.remove(x[1])
+            if x[0] < x[1]:
+                Spairs.append(x)
+            else:
+                Spairs.append((x[1], x[0]))
+        
 
         # Convert S values back to card strings
         singles = []
@@ -115,7 +122,6 @@ class Algorithm:
                     action.append(self.inverseS(choices[-2])) # Play second weakest card
                 elif len(choices) != 0:
                     action.append(self.inverseS(choices[-1])) ## PLay weakest card, update when 
-        
         # If trick size is 2, try to play a pair              ## relative S function exists
         elif len(state.toBeat.cards) == 2:
             if len(pairs) > 0:

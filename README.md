@@ -1,5 +1,9 @@
 # Battle of the Bots: [Your Bot's Name]
 
+## Conventions in the code:
+   - S refers to the strength value of the card (0 is strongest, 51 is weakest)
+   - Tricks are represented as tuples, where the first element is the strongest card
+
 ## Overview
 
 Welcome to the README for **[Your Bot's Name]**, a participant in the Battle of the Bots competition. This bot has been designed to compete in the algorithm-based challenges of the hackathon. Below you'll find information on how to set up, use, and understand the functionality of this bot.
