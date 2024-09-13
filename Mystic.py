@@ -44,7 +44,7 @@ class Algorithm:
                 else:
                     Queue.append(pairlist[idx][1], Scard)
         
-        # remaining cards are singles
+        # Move cards in Queue out of single list (to avoid loop iteration bug in earlier loop)
         for x in Queue:
             Ssingles.remove(x[0])
             Ssingles.remove(x[1])
@@ -53,7 +53,7 @@ class Algorithm:
             else:
                 Spairs.append((x[1], x[0]))
         
-
+        # remaining cards are singles
         # Convert S values back to card strings
         singles = []
         for Sval in Ssingles:
