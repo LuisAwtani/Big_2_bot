@@ -1,4 +1,4 @@
-# Currently working Flag: OFF
+# Currently working Flag: ON
 from classes import *
 
 class Algorithm:
@@ -57,8 +57,14 @@ class Algorithm:
         for SvalTuple in Spairs:
             card1 = self.inverseS(SvalTuple[0])
             card2 = self.inverseS(SvalTuple[1])
-            pairs.append((card1, card2))
+            if self.S(card1) > self.S(card2):
+                pairs.append((card1, card2))
+            else:
+                pairs.append((card2, card1))
+
+        
         print(f"Pairs found: {pairs}, remaining single cards: {singles}")
+        # Returns tricks as a tuple with most powerful card FIRST
         return [singles, pairs]
 
 
@@ -79,15 +85,16 @@ class Algorithm:
 
         # If I am the first to play, play 3 of Diamonds
         if state.toBeat is None:
-
-            # NOTE: Bug if all for 3s in pairs, however, this should never happen
-            if sortedHand[-1] in pairs:    # if 3 is in a pair, append that pair
-                for pair in pairs:
-                    if pair[0].startswith('3'):
-                        action.append(pair[0])
-                        action.append(pair[1])
-            else: # 3 is a solo card
-                action.append(sortedHand[-1]) # Play 3 of Diamonds
+            action.append(pairs[0][0], pairs[0][1])
+            if False:
+                # NOTE: Bug if all for 3s in pairs, however, this should never happen
+                if sortedHand[-1] in pairs:    # if 3 is in a pair, append that pair
+                    for pair in pairs:
+                        if pair[0].startswith('3'):
+                            action.append(pair[0])
+                            action.append(pair[1])
+                else: # 3 is a solo card
+                    action.append(sortedHand[-1]) # Play 3 of Diamonds
 
 
         # If the trick size is 1, play second weakest card
@@ -99,15 +106,17 @@ class Algorithm:
                 for card in singles: 
                     if self.S(card) < self.S(cardToBeat): # lower S value is stronger
                         choices.append(self.S(card))
-                if len(choices) > 1:
-                    choices.sort()
+                
+                choices.sort()
+                if len(choices) > 2:
                     action.append(self.inverseS(choices[-2])) # Play second weakest card
-
-
-        # If trick size is 2, try to play a pair
+                else:
+                    action.append(self.inverseS(choices[-1])) ## PLay weakest card, update when 
+        
+        # If trick size is 2, try to play a pair              ## relative S function exists
         elif len(state.toBeat.cards) == 2:
             if len(pairs) > 0:
-                action.append(pairs[0])
+                action.append([pairs[0][0], pairs[0][1]])
   
 
 
