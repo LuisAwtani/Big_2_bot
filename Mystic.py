@@ -1,4 +1,4 @@
-# Currently working Flag: ON
+# Currently working Flag: OFF
 from classes import *
 
 class Algorithm:
@@ -38,7 +38,6 @@ class Algorithm:
         for Scard in Ssingles:
             idx = Scard // 4
             pairlist[idx][0] += 1
-            print(f"Found a {Scard} with index {idx}. \n pairlist is now {pairlist}")
             
             if pairlist[idx][0] == 2: # If we got a pair, find S value of twin, and move both to Queue
                 if Scard < pairlist[idx][1]:
@@ -49,7 +48,6 @@ class Algorithm:
 
         # Move cards in Queue out of single list (to avoid loop iteration bug in earlier loop)
         for x in Queue:
-            print(f"Trying to remove: {x} from singles: {Ssingles}")
             Ssingles.remove(x[0])
             Ssingles.remove(x[1])
             if x[0] < x[1]:
