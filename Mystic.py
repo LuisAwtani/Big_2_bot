@@ -119,11 +119,15 @@ class Algorithm:
         # If trick size is 2, try to play a pair              ## relative S function exists
         elif len(state.toBeat.cards) == 2:
             if len(pairs) > 0:
-
-                print(f"Cards to beat: {state.toBeat.cards}")
-                
-                play = [pairs[0][0], pairs[0][1]]
-                action = play
+                weakest = min(self.S(x) for x in state.toBeat.cards)
+                print(f"Cards to beat: {state.toBeat.cards}") 
+                for x in pairs:
+                    if self.S(x[0]) < weakest: #PLay weakest eligible pair
+                        weakest = self.S(x[0])
+                        action = [x[0], x[1]]   
+                    
     
         # If the trick size is 2, 3, or 5, I will pass
+
+        #NOTE: action must be a list of strings
         return action, myData
