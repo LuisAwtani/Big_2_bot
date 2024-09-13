@@ -1,4 +1,4 @@
-# Hello World (Sorry this is taking me forever)
+# Currently working Flag: OFF
 from classes import *
 
 class Algorithm:
@@ -58,6 +58,7 @@ class Algorithm:
             card1 = self.inverseS(SvalTuple[0])
             card2 = self.inverseS(SvalTuple[1])
             pairs.append((card1, card2))
+        print(f"Pairs found: {pairs}, remaining single cards: {singles}")
         return [singles, pairs]
 
 
@@ -96,11 +97,11 @@ class Algorithm:
                 choices = []
                 cardToBeat = state.toBeat.cards[0]
                 for card in singles: 
-                    if self.S(card) > self.S(cardToBeat):
+                    if self.S(card) < self.S(cardToBeat): # lower S value is stronger
                         choices.append(self.S(card))
                 if len(choices) > 1:
                     choices.sort()
-                    action.append(self.inverseS(choices[1]))
+                    action.append(self.inverseS(choices[-2])) # Play second weakest card
 
 
         # If trick size is 2, try to play a pair
