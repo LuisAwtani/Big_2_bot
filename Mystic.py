@@ -23,7 +23,6 @@ class Algorithm:
     # TODO: function that evaluates relative value of S
 
 
-
     def make_strategy(self, handInput):
 
         # initially, all cards are single
@@ -83,18 +82,22 @@ class Algorithm:
         pairs = strategy[1]
 
 
-        # If I am the first to play, play 3 of Diamonds
+        # If I start game or past 3 players have passed
         if state.toBeat is None:
-            action.append(pairs[0][0], pairs[0][1])
-            if False:
-                # NOTE: Bug if all for 3s in pairs, however, this should never happen
-                if sortedHand[-1] in pairs:    # if 3 is in a pair, append that pair
-                    for pair in pairs:
-                        if pair[0].startswith('3'):
-                            action.append(pair[0])
-                            action.append(pair[1])
-                else: # 3 is a solo card
-                    action.append(sortedHand[-1]) # Play 3 of Diamonds
+
+            if len(pairs) > 0: # If we can play a pair trick, play weakest
+                weakest = 52
+                for x in pairs:
+                    if self.S(x[0]) < weakest:
+                        action = [x[0], x[1]]
+                        weakest = self.S(x[0])
+        
+            elif len(singles) > 0:    #else play (second weakest) single card
+                weakest = 52
+                for x in singles:
+                    if self.S(singles) < weakest:
+                        weakest = self.S(singles)
+                        action = [x]
 
 
         # If the trick size is 1, play second weakest card
@@ -116,9 +119,13 @@ class Algorithm:
         # If trick size is 2, try to play a pair              ## relative S function exists
         elif len(state.toBeat.cards) == 2:
             if len(pairs) > 0:
-                action.append([pairs[0][0], pairs[0][1]])
-  
 
+                print(f"Cards to beat: {state.toBeat.cards}")
+                
+                play = [pairs[0][0], pairs[0][1]]
+                print(f"Attempting to play: {play}")
 
+                action = play
+    
         # If the trick size is 2, 3, or 5, I will pass
         return action, myData
