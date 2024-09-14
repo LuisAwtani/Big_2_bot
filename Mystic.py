@@ -18,9 +18,26 @@ class Algorithm:
         suitIndex = rating % 4
         return ranks[index] + suits[suitIndex]
 
+    def countDeadCards(self, state: GameHistory):
+        ThisGame = state.gameHistory
+        deadCards = set()
+        for x in ThisGame:
+            for y in x:
+                for card in y.cards:
+                    deadCards.add(card)
+        return deadCards
 
-    #def relativeS(self, S):
-    # TODO: function that evaluates relative value of S
+    def Srel(self, Card: str, deadCards, myHand):
+        Sval = self.S(Card)
+        for deadCard in deadCards:
+            if self.S(deadCard) < Sval:
+                Sval -= 1
+        Hand = myHand.sorted(reverse=True)
+        Hand.remove(Card)
+        for x in Hand:
+            if self.S(x) < self.S(Card):
+                Sval
+        return Sval
 
 
     def make_strategy(self, handInput):
