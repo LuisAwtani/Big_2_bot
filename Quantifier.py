@@ -25,12 +25,12 @@ class Algorithm:
                     deadCards.add(card)
         return deadCards
 
-    def Srel(self, Card: str, deadCards, myHand):
+    def Srel(self, Card: str, deadCards: set, myHand: list):
         Sval = self.S(Card)
         for deadCard in deadCards:
             if self.S(deadCard) < Sval:
                 Sval -= 1
-        Hand = myHand.sorted(reverse=True)
+        Hand = sorted(myHand, reverse=True)
         Hand.remove(Card)
         for x in Hand:
             if self.S(x) < self.S(Card):
@@ -42,22 +42,24 @@ class Algorithm:
         for i in range(0, len(hand)):
             for j in range(i + 1, len(hand)):
                 if hand[i][0] == hand[j][0]:
-                    pairs.append([hand[i], hand[j]])
+                    pairs.append((hand[i], hand[j]))
                 else:
                     break
         return pairs
 
     def SrelPairs(self, Pair: tuple, deadCards, myHand):
         # Compute which stronger cards are still in the game 
-        Sval = Pair[0]
+        Sval = self.S(Pair[0])
         inPlay = []
+        if Sval > 49:   # Prevents overshoot when we check pairs for 3
+            Sval = 49
         for s in range(Sval+2, -1, -1): # Start indexing 2 cards weaker (4H,4C is weaker than 4S,4D)
             Card = self.inverseS(s)
             if Card not in deadCards:
                 if Card not in myHand:  # Don't consider cards that you're holding
                     inPlay.append(Card)
-        pairs = self.findPairs(inPlay)        
-        print(f"Stronger pairs still in the game include: {pairs}")
+        strongerpairs = self.findPairs(inPlay)        
+        return strongerpairs
 
 
 
@@ -67,12 +69,12 @@ class Algorithm:
         myData = state.myData   # Communications from the previous iteration
 
 
-        print(f"Dead Cards are: {deadCards}")
+        #print(f"Dead Cards are: {deadCards}")
         # Sort hand from lowest to highest card
         sortedHand = sorted(state.myHand, key = lambda x : self.S(x), reverse=True) 
 
         for x in sortedHand:
-            if self.Srel(x,deadCards) == 0:
+            if self.Srel(x,deadCards, sortedHand) == 0:
                 print(f"I'm holding the strongest card in the game!: {x}")
 
 
@@ -89,8 +91,18 @@ class Algorithm:
                     break
 
         elif len(state.toBeat.cards) == 2:
+            StoBeat = min([self.S(card) for card in state.toBeat.cards])
             pairs = self.findPairs(sortedHand)
-            action = pairs[0]
+            print(f"S value to beat: {StoBeat} which is card {self.inverseS(StoBeat)}")
+            if len(pairs) > 0:
+                for pair in pairs:
+                    if self.S(pair[0]) < StoBeat:
+                        action = [pair[0], pair[1]]
+                        print(f"S value im tryna play: {self.S(pair[0])} which is card {pair[0]}")
+                        strongerPairs = self.SrelPairs(pair, deadCards, sortedHand)
+                        print(f"Stronger pairs ingame than the one i'm trying to play: {strongerPairs}")
+
+            
 
         # If the trick size is 2, 3, or 5, I will pass
 
