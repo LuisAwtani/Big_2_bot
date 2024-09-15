@@ -34,6 +34,7 @@ def findSingles(hand):
     return singles
 
 
+## NOTE: Does this function assume hand is sorted by S? If not, it might be a good idea to sort
 # function to find pairs in a hand
 def findPairs(hand):
     pairs = []
