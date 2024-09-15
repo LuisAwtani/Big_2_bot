@@ -1,263 +1,197 @@
 import random
+from collections import defaultdict
+from itertools import combinations, product
 
-# function to generate a random hand of 13 cards
-def generateHand():
-    hand = []
-    ranks = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2']
-    suits = ['D', 'C', 'H', 'S']
-    for i in range(13):
-        randomCard = ranks[random.randint(0, 12)] + suits[random.randint(0, 3)]
-        while randomCard in hand:
-            randomCard = ranks[random.randint(0, 12)] + suits[random.randint(0, 3)]
-        hand.append(randomCard)
-    return hand
-
-
-# section to sort a hand
-rankOrder = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4, '8': 5, '9': 6, 'T': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12}
+# Mapping of ranks and suits to numerical values
+rankOrder = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4, '8': 5,
+             '9': 6, 'T': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12}
 suitOrder = {'D': 0, 'C': 1, 'H': 2, 'S': 3}
 
+# Function to generate a random hand of 13 unique cards
+def generateHand():
+    ranks = ['3', '4', '5', '6', '7', '8',
+             '9', 'T', 'J', 'Q', 'K', 'A', '2']
+    suits = ['D', 'C', 'H', 'S']
+    deck = [rank + suit for rank in ranks for suit in suits]
+    random.shuffle(deck)
+    return deck[:13]
+
+# Functions to get card values for sorting
 def cardValueByRank(card):
-    rank = card[0]
-    suit = card[1]
+    rank, suit = card[0], card[1]
     return (rankOrder[rank], suitOrder[suit])
 
 def cardValueBySuit(card):
-    rank = card[0]
-    suit = card[1]
+    rank, suit = card[0], card[1]
     return (suitOrder[suit], rankOrder[rank])
 
-
-# function to find singles in a hand
-def findSingles(hand):
-    singles = hand
-    return singles
-
-
-## NOTE: Does this function assume hand is sorted by S? If not, it might be a good idea to sort
-# function to find pairs in a hand
+# Function to find pairs in a hand
 def findPairs(hand):
     pairs = []
-    for i in range(0, len(hand)):
-        for j in range(i + 1, len(hand)):
-            if hand[i][0] == hand[j][0]:
-                pairs.append([hand[i], hand[j]])
-            else:
-                break
+    rank_dict = defaultdict(list)
+    for card in hand:
+        rank_dict[card[0]].append(card)
+    for cards in rank_dict.values():
+        if len(cards) >= 2:
+            for pair in combinations(cards, 2):
+                pairs.append(list(pair))
     return pairs
 
-
-# function to find triples in a hand
+# Function to find triples in a hand
 def findTriples(hand):
     triples = []
-    for i in range(0, len(hand)):
-        for j in range(i + 1, len(hand)):
-            for k in range(j + 1, len(hand)):
-                if hand[i][0] == hand[j][0] == hand[k][0]:
-                    triples.append([hand[i], hand[j], hand[k]])
-                else:
-                    break
+    rank_dict = defaultdict(list)
+    for card in hand:
+        rank_dict[card[0]].append(card)
+    for cards in rank_dict.values():
+        if len(cards) >= 3:
+            for triple in combinations(cards, 3):
+                triples.append(list(triple))
     return triples
 
-# NOTE: for high order tricks, put strongest card at the front of the list/tuple
-# function to find straights in a hand
-def findStraights(hand):
-    straights = []
-    for i in range(0, len(hand)):
-        for j in range(i + 1, len(hand)):
-            for k in range(j + 1, len(hand)):
-                for l in range(k + 1, len(hand)):
-                    for m in range(l + 1, len(hand)):
-                        if rankOrder[hand[i][0]] + 4 == rankOrder[hand[j][0]] + 3 == rankOrder[hand[k][0]] + 2 == rankOrder[hand[l][0]] + 1 == rankOrder[hand[m][0]]:
-                            if hand[i][1] == hand[j][1] == hand[k][1] == hand[l][1] == hand[m][1]:
-                                continue
-                            else:
-                                straights.append([hand[i], hand[j], hand[k], hand[l], hand[m]])
-    return straights
-
-
-# function to find flushes in a hand
-def findFlushes(hand):
-    flushes = []
-    for i in range(0, len(hand)):
-        for j in range(i + 1, len(hand)):
-            for k in range(j + 1, len(hand)):
-                for l in range(k + 1, len(hand)):
-                    for m in range(l + 1, len(hand)):
-                        if hand[i][1] == hand[j][1] == hand[k][1] == hand[l][1] == hand[m][1]:
-                            if rankOrder[hand[i][0]] + 4 == rankOrder[hand[j][0]] + 3 == rankOrder[hand[k][0]] + 2 == rankOrder[hand[l][0]] + 1 == rankOrder[hand[m][0]]:
-                                continue
-                            else:
-                                flushes.append([hand[i], hand[j], hand[k], hand[l], hand[m]])
-    return flushes
-
-
-# function to find full houses in a hand
-def findFullHouses(pairs, triples):
+# Function to find full houses in a hand
+def findFullHouses(hand):
     fullHouses = []
-    for pair in pairs:
+    rank_dict = defaultdict(list)
+    for card in hand:
+        rank_dict[card[0]].append(card)
+    triple_ranks = [rank for rank, cards in rank_dict.items() if len(cards) >= 3]
+    pair_ranks = [rank for rank, cards in rank_dict.items() if len(cards) >= 2]
+    for triple_rank in triple_ranks:
+        triples = list(combinations(rank_dict[triple_rank], 3))
         for triple in triples:
-            fail = False
-            for card in triple:
-                if card in pair:
-                    fail = True
-                    break
-            if not fail:
-                fullHouses.append(pair + triple)
+            for pair_rank in pair_ranks:
+                if pair_rank != triple_rank:
+                    pairs = list(combinations(rank_dict[pair_rank], 2))
+                    for pair in pairs:
+                        fullHouses.append(list(triple) + list(pair))
     return fullHouses
 
-
-# function to find four of a kinds in a hand
+# Function to find four of a kinds in a hand
 def findFourOfAKinds(hand):
     fourOfAKinds = []
-    for i in range(0, len(hand)):
-        for j in range(i + 1, len(hand)):
-            for k in range(j + 1, len(hand)):
-                for l in range(k + 1, len(hand)):
-                    if hand[i][0] == hand[j][0] == hand[k][0] == hand[l][0]:
-                        for m in range(0, len(hand)):
-                            if m != i and m != j and m != k and m != l:
-                                fourOfAKinds.append([hand[i], hand[j], hand[k], hand[l], hand[m]])
+    rank_dict = defaultdict(list)
+    for card in hand:
+        rank_dict[card[0]].append(card)
+    for rank, cards in rank_dict.items():
+        if len(cards) >= 4:
+            quads = list(combinations(cards, 4))
+            remaining_cards = [c for c in hand if c[0] != rank]
+            for quad in quads:
+                for kicker in remaining_cards:
+                    fourOfAKinds.append(list(quad) + [kicker])
     return fourOfAKinds
 
+# Function to find straights in a hand
+def findStraights(hand):
+    straights = []
+    rank_dict = defaultdict(list)
+    for card in hand:
+        rank_value = rankOrder[card[0]]
+        rank_dict[rank_value].append(card)
+    rank_values = sorted(rank_dict.keys())
+    for i in range(len(rank_values) - 4):
+        consecutive_ranks = rank_values[i:i+5]
+        if consecutive_ranks == list(range(consecutive_ranks[0], consecutive_ranks[0]+5)):
+            cards_options = [rank_dict[rank] for rank in consecutive_ranks]
+            for combo in product(*cards_options):
+                suits = set(card[1] for card in combo)
+                if len(suits) >= 2:
+                    straights.append(list(combo))
+    return straights
 
-# function to find straight flushes in a hand
+# Function to find flushes in a hand
+def findFlushes(hand):
+    flushes = []
+    suit_dict = defaultdict(list)
+    for card in hand:
+        suit_dict[card[1]].append(card)
+    for cards in suit_dict.values():
+        if len(cards) >= 5:
+            for flush in combinations(cards, 5):
+                rank_values = sorted(rankOrder[card[0]] for card in flush)
+                if rank_values != list(range(rank_values[0], rank_values[0]+5)):
+                    flushes.append(list(flush))
+    return flushes
+
+# Function to find straight flushes in a hand
 def findStraightFlushes(hand):
     straightFlushes = []
-    for i in range(0, len(hand)):
-        for j in range(i + 1, len(hand)):
-            for k in range(j + 1, len(hand)):
-                for l in range(k + 1, len(hand)):
-                    for m in range(l + 1, len(hand)):
-                        if rankOrder[hand[i][0]] + 4 == rankOrder[hand[j][0]] + 3 == rankOrder[hand[k][0]] + 2 == rankOrder[hand[l][0]] + 1 == rankOrder[hand[m][0]]:
-                            if hand[i][1] == hand[j][1] == hand[k][1] == hand[l][1] == hand[m][1]:
-                                straightFlushes.append([hand[i], hand[j], hand[k], hand[l], hand[m]])
+    suit_dict = defaultdict(list)
+    for card in hand:
+        rank_value = rankOrder[card[0]]
+        suit_dict[card[1]].append((rank_value, card))
+    for suit, cards in suit_dict.items():
+        rank_values = sorted(set(rank_value for rank_value, card in cards))
+        rank_to_card = defaultdict(list)
+        for rank_value, card in cards:
+            rank_to_card[rank_value].append(card)
+        for i in range(len(rank_values) - 4):
+            consecutive_ranks = rank_values[i:i+5]
+            if consecutive_ranks == list(range(consecutive_ranks[0], consecutive_ranks[0]+5)):
+                cards_options = [rank_to_card[rank] for rank in consecutive_ranks]
+                for combo in product(*cards_options):
+                    straightFlushes.append(list(combo))
     return straightFlushes
 
-
-# def findAllSplitsFromCombinedCombinations(hand, allCombinations):
-#     # Base case: if hand is empty, return a valid split (no more cards to split)
-#     if not hand:
-#         return [[]]
-
-#     splits = []
-
-#     # Try each combination (singles, pairs, triples, five-card hands)
-#     for combination in allCombinations:
-#         if isSubset(combination, hand):
-#             remainingHand = removeCards(hand, combination)
-#             for split in findAllSplitsFromCombinedCombinations(remainingHand, allCombinations):
-#                 splits.append([combination] + split)
-
-#     return splits
-
-# def removeCards(hand, cards):
-#     """
-#     Given a hand and a list of cards, return a new hand with those cards removed.
-#     """
-#     handCopy = hand[:]
-#     for card in cards:
-#         handCopy.remove(card)
-#     return handCopy
-
-# def isSubset(subset, hand):
-#     """
-#     Check if all cards in 'subset' are available in 'hand'.
-#     """
-#     handCopy = hand[:]
-#     for card in subset:
-#         if card not in handCopy:
-#             return False
-#         handCopy.remove(card)
-#     return True
-
-
-# def removeCards(hand, cards):
-#     """
-#     Given a hand and a list of cards, return a new hand with those cards removed.
-#     """
-#     handCopy = hand[:]
-#     for card in cards:
-#         handCopy.remove(card)
-#     return handCopy
-
-# def isSubset(subset, hand):
-#     """
-#     Check if all cards in 'subset' are available in 'hand'.
-#     """
-#     handCopy = hand[:]
-#     for card in subset:
-#         if card not in handCopy:
-#             return False
-#         handCopy.remove(card)
-#     return True
-
-
-# main function
+# Main function
 def main():
     print("Press enter to generate a hand:")
-    enter = input()
+    input()
     hand = generateHand()
     print(hand, "\n")
 
     print("Press enter to sort the hand by rank:")
-    enter = input()
+    input()
     sortedHandByRank = sorted(hand, key=cardValueByRank)
     print(sortedHandByRank, "\n")
 
     print("Press enter to sort the hand by suit:")
-    enter = input()
+    input()
     sortedHandBySuit = sorted(hand, key=cardValueBySuit)
     print(sortedHandBySuit, "\n")
 
     hand = sortedHandByRank
 
     print("Press enter to find singles:")
-    enter = input()
-    singles = findSingles(hand)
+    input()
+    singles = hand  # All cards are singles
     print(singles, "\n")
 
     print("Press enter to find pairs:")
-    enter = input()
+    input()
     pairs = findPairs(hand)
     print(pairs, "\n")
 
     print("Press enter to find triples:")
-    enter = input()
+    input()
     triples = findTriples(hand)
     print(triples, "\n")
 
     print("Press enter to find straights:")
-    enter = input()
+    input()
     straights = findStraights(hand)
     print(straights, "\n")
 
     print("Press enter to find flushes:")
-    enter = input()
+    input()
     flushes = findFlushes(hand)
     print(flushes, "\n")
 
     print("Press enter to find full houses:")
-    enter = input()
-    fullHouses = findFullHouses(pairs, triples)
+    input()
+    fullHouses = findFullHouses(hand)
     print(fullHouses, "\n")
 
     print("Press enter to find four of a kinds:")
-    enter = input()
+    input()
     fourOfAKinds = findFourOfAKinds(hand)
     print(fourOfAKinds, "\n")
 
     print("Press enter to find straight flushes:")
-    enter = input()
+    input()
     straightFlushes = findStraightFlushes(hand)
     print(straightFlushes, "\n")
-
-    # print("Press enter to find all possible splits:")
-    # enter = input()
-    # allSplits = []
-    # for split in allSplits:
-    #     print(split)
-
 
 if __name__ == "__main__":
     main()
