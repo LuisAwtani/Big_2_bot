@@ -60,6 +60,10 @@ class Algorithm:
                     inPlay.append(Card)
         strongerpairs = self.findPairs(inPlay)        
         return strongerpairs
+    
+    def cardsHeldByPlayer(self, PlayerNum: int, Players: List[Player]):
+        cardsHeld = Players[PlayerNum].handSize
+        return cardsHeld
 
 
 
@@ -67,7 +71,11 @@ class Algorithm:
         action = []             # The cards you are playing for this trick
         deadCards = self.countDeadCards(state.matchHistory[-1])
         myData = state.myData   # Communications from the previous iteration
-
+        myPlayerNum = state.myPlayerNum  # Player numbers are 0 to 3
+        
+        print(f"My player number is: {myPlayerNum}")
+        MyCardQuantity = self.cardsHeldByPlayer(myPlayerNum, state.players)
+        print(f"I am holding {MyCardQuantity} cards")
 
         #print(f"Dead Cards are: {deadCards}")
         # Sort hand from lowest to highest card
