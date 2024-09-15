@@ -59,7 +59,7 @@ def findTriples(hand):
                     break
     return triples
 
-
+# NOTE: for high order tricks, put strongest card at the front of the list/tuple
 # function to find straights in a hand
 def findStraights(hand):
     straights = []

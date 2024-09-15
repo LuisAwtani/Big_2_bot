@@ -8,6 +8,13 @@ class Algorithm:
         suits = ['S', 'H', 'C', 'D']
         rating = ranks.index(Card[0]) * 4 + suits.index(Card[1])
         return rating
+    
+    def inverseS(self, rating: int):
+        ranks = ['2', 'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3']
+        suits = ['S', 'H', 'C', 'D']
+        index = rating // 4
+        suitIndex = rating % 4
+        return ranks[index] + suits[suitIndex]
 
     def countDeadCards(self, state: GameHistory):
         ThisGame = state.gameHistory
@@ -29,6 +36,29 @@ class Algorithm:
             if self.S(x) < self.S(Card):
                 Sval
         return Sval
+
+    def findPairs(self, hand):
+        pairs = []
+        for i in range(0, len(hand)):
+            for j in range(i + 1, len(hand)):
+                if hand[i][0] == hand[j][0]:
+                    pairs.append([hand[i], hand[j]])
+                else:
+                    break
+        return pairs
+
+    def SrelPairs(self, Pair: tuple, deadCards, myHand):
+        # Compute which stronger cards are still in the game 
+        Sval = Pair[0]
+        inPlay = []
+        for s in range(Sval+2, -1, -1): # Start indexing 2 cards weaker (4H,4C is weaker than 4S,4D)
+            Card = self.inverseS(s)
+            if Card not in deadCards:
+                if Card not in myHand:  # Don't consider cards that you're holding
+                    inPlay.append(Card)
+        pairs = self.findPairs(inPlay)        
+        print(f"Stronger pairs still in the game include: {pairs}")
+
 
 
     def getAction(self, state: MatchState):
@@ -57,6 +87,10 @@ class Algorithm:
                 if self.S(card) < self.S(cardToBeat):
                     action.append(card)
                     break
+
+        elif len(state.toBeat.cards) == 2:
+            pairs = self.findPairs(sortedHand)
+            action = pairs[0]
 
         # If the trick size is 2, 3, or 5, I will pass
 
