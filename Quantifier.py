@@ -46,9 +46,10 @@ class Algorithm:
                 else:
                     break
         return pairs
+    
 
     def SrelPairs(self, Pair: tuple, deadCards, myHand):
-        # Compute which stronger cards are still in the game 
+        # Compute which stronger pairs are still in the game 
         Sval = self.S(Pair[0])
         inPlay = []
         if Sval > 49:   # Prevents overshoot when we check pairs for 3
@@ -61,9 +62,36 @@ class Algorithm:
         strongerpairs = self.findPairs(inPlay)        
         return strongerpairs
     
+
     def cardsHeldByPlayer(self, PlayerNum: int, Players: List[Player]):
         cardsHeld = Players[PlayerNum].handSize
         return cardsHeld
+
+
+    # For every card, what is the prob each player is holding that card
+    def gameStartCardProbabilityDistribution(self, state: MatchState, DeadCards: set):
+        notConsidered = []
+        for deadCard in DeadCards:
+            notConsidered.append(self.S(deadCard))
+
+        for card in state.myHand:
+            notConsidered.append(self.S(card))
+
+        dist = []
+        CardsInPlayQuantity = 52 - len(notConsidered)
+        for Scard in range(52): 
+            if Scard not in notConsidered:
+                for playerNum in range(4):
+                    if playerNum != state.myPlayerNum:
+                        probabilityVar = CardsInPlayQuantity / state.players[playerNum].handSize
+                        dist.append([playerNum, Scard, probabilityVar])
+
+        print("Probability distibution: (first 10)")
+        for x in range(10):
+            print(f"Player num: {dist[x][0]}, card: {dist[x][1]}, prob: {dist[x][2]}")
+
+
+
 
 
 
