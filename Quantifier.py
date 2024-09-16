@@ -83,12 +83,14 @@ class Algorithm:
             if Scard not in notConsidered:
                 for playerNum in range(4):
                     if playerNum != state.myPlayerNum:
-                        probabilityVar = CardsInPlayQuantity / state.players[playerNum].handSize
+                        probabilityVar = state.players[playerNum].handSize / CardsInPlayQuantity
                         dist.append([playerNum, Scard, probabilityVar])
 
+        
+        print(f"My player number is {state.myPlayerNum}")
         print("Probability distibution: (first 10)")
         for x in range(10):
-            print(f"Player num: {dist[x][0]}, card: {dist[x][1]}, prob: {dist[x][2]}")
+            print(f"Player num: {dist[x][0]}, card: {self.inverseS(dist[x][1])}, prob: {dist[x][2]} \n")
 
 
 
@@ -101,17 +103,19 @@ class Algorithm:
         myData = state.myData   # Communications from the previous iteration
         myPlayerNum = state.myPlayerNum  # Player numbers are 0 to 3
         
-        print(f"My player number is: {myPlayerNum}")
+
+        self.gameStartCardProbabilityDistribution(state, deadCards)
+        #print(f"My player number is: {myPlayerNum}")
         MyCardQuantity = self.cardsHeldByPlayer(myPlayerNum, state.players)
-        print(f"I am holding {MyCardQuantity} cards")
+        #print(f"I am holding {MyCardQuantity} cards")
 
         #print(f"Dead Cards are: {deadCards}")
-        # Sort hand from lowest to highest card
+        ### Sort hand from lowest to highest card
         sortedHand = sorted(state.myHand, key = lambda x : self.S(x), reverse=True) 
 
-        for x in sortedHand:
-            if self.Srel(x,deadCards, sortedHand) == 0:
-                print(f"I'm holding the strongest card in the game!: {x}")
+        #for x in sortedHand:
+        #    if self.Srel(x,deadCards, sortedHand) == 0:
+        #        print(f"I'm holding the strongest card in the game!: {x}")
 
 
         # If I am the first to play, play my weakest one card trick
