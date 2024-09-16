@@ -70,12 +70,15 @@ class Algorithm:
 
     def tricksPlayedByPlayer(self, state: MatchState, PlayerNum: int):
         tricks = []
-        for GameHistory in state.matchHistory:
-            if GameHistory.finished is False: # If this is the correct (current) game beign played
-                for round in GameHistory.gameHistory:
-                    for trick in round:
-                        if trick.playerNum == PlayerNum:
-                            tricks.append(trick.cards)
+        GameHistory = state.matchHistory[-1]
+        #if GameHistory.finished is False: # If this is the correct (current) game beign played
+        for round in GameHistory.gameHistory:
+            toBeat = 'Start'
+            for trick in round:
+                if trick.playerNum == PlayerNum:
+                    tricks.append((toBeat, trick.cards))
+                if len(trick.cards) > 0:
+                    toBeat = trick.cards
         return tricks
 
 
@@ -112,18 +115,19 @@ class Algorithm:
         deadCards = self.countDeadCards(state.matchHistory[-1])
         myData = state.myData   # Communications from the previous iteration
         myPlayerNum = state.myPlayerNum  # Player numbers are 0 to 3
-        if myPlayerNum == 4:
-            PlayerAfterMe = 0
-        else:
-            PlayerAfterMe = myPlayerNum + 1
-        print(f"Player after me has played: {self.tricksPlayedByPlayer(state, PlayerAfterMe)}")
+        PlayerAfterMe = (myPlayerNum + 1) % 4
+        PlayerBeforeMe = (myPlayerNum + 3) % 4
+        PlayerOppositeMe = (myPlayerNum + 2) % 4
+
+        TricksPlayedByPlayer = self.tricksPlayedByPlayer(state, PlayerAfterMe)
+        print(f"Player after me has played (toBeat, trick): {TricksPlayedByPlayer}")
         
         #self.gameStartCardProbabilityDistribution(state, deadCards)
         #print(f"My player number is: {myPlayerNum}")
         MyCardQuantity = self.cardsHeldByPlayer(myPlayerNum, state.players)
         #print(f"I am holding {MyCardQuantity} cards")
-
         #print(f"Dead Cards are: {deadCards}")
+
         ### Sort hand from lowest to highest card
         sortedHand = sorted(state.myHand, key = lambda x : self.S(x), reverse=True) 
 
@@ -133,7 +137,10 @@ class Algorithm:
 
 
         # If I am the first to play, play my weakest one card trick
-        if state.toBeat is None: 
+        if len(deadCards) == 0: 
+            action.append(sortedHand[0])
+
+        elif state.toBeat is None:
             action.append(sortedHand[0])
 
         # If the trick size is 1, play my weakest trick that still beats this one, or pass nothing otherwise
