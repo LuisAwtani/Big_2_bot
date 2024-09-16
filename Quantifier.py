@@ -68,6 +68,17 @@ class Algorithm:
         return cardsHeld
 
 
+    def tricksPlayedByPlayer(self, state: MatchState, PlayerNum: int):
+        tricks = []
+        for GameHistory in state.matchHistory:
+            if GameHistory.finished is False: # If this is the correct (current) game beign played
+                for round in GameHistory.gameHistory:
+                    for trick in round:
+                        if trick.playerNum == PlayerNum:
+                            tricks.append(trick.cards)
+        return tricks
+
+
     # For every card, what is the prob each player is holding that card
     def gameStartCardProbabilityDistribution(self, state: MatchState, DeadCards: set):
         notConsidered = []
@@ -78,21 +89,20 @@ class Algorithm:
             notConsidered.append(self.S(card))
 
         dist = []
-        CardsInPlayQuantity = 52 - len(notConsidered)
-        for Scard in range(52): 
-            if Scard not in notConsidered:
-                for playerNum in range(4):
-                    if playerNum != state.myPlayerNum:
-                        probabilityVar = state.players[playerNum].handSize / CardsInPlayQuantity
-                        dist.append([playerNum, Scard, probabilityVar])
+        ScardsInPlay = [num for num in range(52) if num not in notConsidered]
+        CardsInPlayQuantity = len(ScardsInPlay)
+        for Scard in ScardsInPlay: 
+            for playerNum in range(4):
+                if playerNum != state.myPlayerNum:
+                    probabilityVar = state.players[playerNum].handSize / CardsInPlayQuantity
+                    dist.append([playerNum, Scard, probabilityVar])
 
-        
         print(f"My player number is {state.myPlayerNum}")
         print("Probability distibution: (first 10)")
         for x in range(10):
             print(f"Player num: {dist[x][0]}, card: {self.inverseS(dist[x][1])}, prob: {dist[x][2]} \n")
 
-
+        return dist
 
 
 
@@ -102,9 +112,13 @@ class Algorithm:
         deadCards = self.countDeadCards(state.matchHistory[-1])
         myData = state.myData   # Communications from the previous iteration
         myPlayerNum = state.myPlayerNum  # Player numbers are 0 to 3
+        if myPlayerNum == 4:
+            PlayerAfterMe = 0
+        else:
+            PlayerAfterMe = myPlayerNum + 1
+        print(f"Player after me has played: {self.tricksPlayedByPlayer(state, PlayerAfterMe)}")
         
-
-        self.gameStartCardProbabilityDistribution(state, deadCards)
+        #self.gameStartCardProbabilityDistribution(state, deadCards)
         #print(f"My player number is: {myPlayerNum}")
         MyCardQuantity = self.cardsHeldByPlayer(myPlayerNum, state.players)
         #print(f"I am holding {MyCardQuantity} cards")
