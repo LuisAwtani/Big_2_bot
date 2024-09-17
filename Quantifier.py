@@ -42,19 +42,26 @@ class Algorithm:
         for i in range(0, len(hand)):
             for j in range(i + 1, len(hand)):
                 if hand[i][0] == hand[j][0]:
-                    pairs.append((hand[i], hand[j]))
+                    if self.S(hand[i]) > self.S(hand[j]):
+                        pairs.append((hand[i], hand[j]))
+                    else:
+                        pairs.append((hand[j], hand[i]))
                 else:
                     break
         return pairs
     
 
-    def SrelPairs(self, Pair: tuple, deadCards, myHand):
+    def StrongerPairs(self, Pair: tuple, deadCards, myHand):
         # Compute which stronger pairs are still in the game 
         Sval = self.S(Pair[0])
         inPlay = []
         if Sval > 49:   # Prevents overshoot when we check pairs for 3
             Sval = 49
-        for s in range(Sval+2, -1, -1): # Start indexing 2 cards weaker (4H,4C is weaker than 4S,4D)
+        if Sval % 4 == 0:
+            indexer = Sval - 1   # Prevents Checking for same rank pairs when a Spade is played
+        else:
+            indexer = Sval + 2
+        for s in range(indexer, -1, -1): # Start indexing 2 cards weaker (3H,3C is weaker than 3S,3D)
             Card = self.inverseS(s)
             if Card not in deadCards:
                 if Card not in myHand:  # Don't consider cards that you're holding
@@ -99,14 +106,41 @@ class Algorithm:
                 if playerNum != state.myPlayerNum:
                     probabilityVar = state.players[playerNum].handSize / CardsInPlayQuantity
                     dist.append([playerNum, Scard, probabilityVar])
-
-        print(f"My player number is {state.myPlayerNum}")
         print("Probability distibution: (first 10)")
         for x in range(10):
-            print(f"Player num: {dist[x][0]}, card: {self.inverseS(dist[x][1])}, prob: {dist[x][2]} \n")
+            print(f"Player: {dist[x][0]}, card: {self.inverseS(dist[x][1])}, prob: {dist[x][2]} \n")
 
         return dist
 
+
+    def adjustProbabilitiesBasedOnMatchHistory(self, state: MatchState, distribution: list, PLayersNotIncludingMe: list):
+        updatedDist = []
+        return updatedDist
+
+    def tracePlayerProbability(self, state: MatchState, Player: int):
+        PlayerHandSize = state.players[Player].handSize
+        NoFullHouse = False
+        NoFlush = False
+        NoFourOfaKind = False
+        playersHistory = self.tricksPlayedByPlayer(state, Player)
+        print(f"Printing player {Player}'s History")
+        for play in playersHistory:
+            print(play, end="   ")
+            toBeat = play[0]
+            Response = play[1]
+
+            if toBeat == 'Start':
+                print(f"Player decided to start round with a {play[1]}")
+
+            elif len(toBeat) == 5:
+                if not Response:
+                    print(f"Player {Player} did not respond to 5 card trick!")
+
+            elif len(toBeat) == 3:
+                if not Response:
+                    print(f"Player {Player} did not respond to a 3 card trick!")
+
+        return 0
 
 
 
@@ -118,15 +152,12 @@ class Algorithm:
         PlayerAfterMe = (myPlayerNum + 1) % 4
         PlayerBeforeMe = (myPlayerNum + 3) % 4
         PlayerOppositeMe = (myPlayerNum + 2) % 4
+        PlayersNotIncludingMe = [PlayerAfterMe, PlayerOppositeMe, PlayerBeforeMe]
 
-        TricksPlayedByPlayer = self.tricksPlayedByPlayer(state, PlayerAfterMe)
-        print(f"Player after me has played (toBeat, trick): {TricksPlayedByPlayer}")
-        
+
+        self.tracePlayerProbability(state, PlayerBeforeMe)
         #self.gameStartCardProbabilityDistribution(state, deadCards)
-        #print(f"My player number is: {myPlayerNum}")
-        MyCardQuantity = self.cardsHeldByPlayer(myPlayerNum, state.players)
-        #print(f"I am holding {MyCardQuantity} cards")
-        #print(f"Dead Cards are: {deadCards}")
+        #MyCardQuantity = self.cardsHeldByPlayer(myPlayerNum, state.players)
 
         ### Sort hand from lowest to highest card
         sortedHand = sorted(state.myHand, key = lambda x : self.S(x), reverse=True) 
@@ -156,12 +187,15 @@ class Algorithm:
             pairs = self.findPairs(sortedHand)
             print(f"S value to beat: {StoBeat} which is card {self.inverseS(StoBeat)}")
             if len(pairs) > 0:
-                for pair in pairs:
+                for pair in pairs:  # Weakest pair should be at the end
                     if self.S(pair[0]) < StoBeat:
                         action = [pair[0], pair[1]]
-                        print(f"S value im tryna play: {self.S(pair[0])} which is card {pair[0]}")
-                        strongerPairs = self.SrelPairs(pair, deadCards, sortedHand)
-                        print(f"Stronger pairs ingame than the one i'm trying to play: {strongerPairs}")
+                if action:
+                    pair = (action[0], action[1])
+                    print(f"S value im tryna play: {self.S(pair[0])} which is card {pair[0]}")
+                    strongerPairs = self.StrongerPairs(pair, deadCards, sortedHand)
+                    print(f"Stronger pairs ingame than the one i'm trying to play: {strongerPairs}")
+
 
             
 
