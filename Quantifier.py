@@ -69,6 +69,45 @@ class Algorithm:
         strongerpairs = self.findPairs(inPlay)        
         return strongerpairs
     
+    # Function returns type of five card trick (string) along with strongest (determinant) card
+    def TypeOfFiveCardTrick(self, trick: list):
+        Strick = sorted([self.S(x) for x in trick])
+        Strongest = Strick[0]
+        previous = Strongest
+        counter = 0
+        for i in range(1, 5):
+            if Strick[i] == previous + 4:
+                previous = Strick[i]
+                counter += 1
+            else:
+                break
+        if counter == 4:
+            return "StraightFlush", self.inverseS(Strongest)
+        
+        CardRanks = [self.inverseS(x)[0] for x in Strick]
+        if len(set(CardRanks)) == 2: # If only 2 ranks exist in the set, Its Fours' of Full House
+            if 4 > CardRanks.count(CardRanks[0]) > 1:  # if its a Full House
+                if CardRanks[2] != CardRanks[0]:   # Find determining (triplet) rank if its full house
+                    return "FullHouse", self.inverseS(Strick[4])
+                else:
+                    return "FullHouse", self.inverseS(Strongest)
+
+            else:  # Else we have Four of a kind
+                if self.inverseS(Strick[1])[0] == self.inverseS(Strick[0])[0]:
+                    return "FourOfaKind", self.inverseS(Strick[0])
+                else:
+                    return "FourOfaKind", self.inverseS(Strick[1])
+
+        CardSuits = [self.inverseS(x)[1] for x in Strick]
+        if len(set(CardSuits)) == 1:
+            return "Flush", self.inverseS(Strongest)
+        else:
+            return "Straight", self.inverseS(Strongest)
+        
+
+
+
+
 
     def cardsHeldByPlayer(self, PlayerNum: int, Players: List[Player]):
         cardsHeld = Players[PlayerNum].handSize
@@ -78,7 +117,7 @@ class Algorithm:
     def tricksPlayedByPlayer(self, state: MatchState, PlayerNum: int):
         tricks = []
         GameHistory = state.matchHistory[-1]
-        #if GameHistory.finished is False: # If this is the correct (current) game beign played
+
         for round in GameHistory.gameHistory:
             toBeat = 'Start'
             for trick in round:
@@ -123,14 +162,14 @@ class Algorithm:
         NoFlush = False
         NoFourOfaKind = False
         playersHistory = self.tricksPlayedByPlayer(state, Player)
-        print(f"Printing player {Player}'s History")
         for play in playersHistory:
-            print(play, end="   ")
             toBeat = play[0]
             Response = play[1]
+            StoBeat = sorted([self.S(x) for x in toBeat])
+            
 
             if toBeat == 'Start':
-                print(f"Player decided to start round with a {play[1]}")
+                print(f"Player {Player} decided to start round with a {play[1]}")
 
             elif len(toBeat) == 5:
                 if not Response:
@@ -138,7 +177,7 @@ class Algorithm:
 
             elif len(toBeat) == 3:
                 if not Response:
-                    print(f"Player {Player} did not respond to a 3 card trick!")
+                    print(f"Player {Player} did not respond to a 3 card trick of rank {play[0][0]}!")
 
         return 0
 
@@ -185,14 +224,14 @@ class Algorithm:
         elif len(state.toBeat.cards) == 2:
             StoBeat = min([self.S(card) for card in state.toBeat.cards])
             pairs = self.findPairs(sortedHand)
-            print(f"S value to beat: {StoBeat} which is card {self.inverseS(StoBeat)}")
+            #print(f"S value to beat: {StoBeat} which is card {self.inverseS(StoBeat)}")
             if len(pairs) > 0:
                 for pair in pairs:  # Weakest pair should be at the end
                     if self.S(pair[0]) < StoBeat:
                         action = [pair[0], pair[1]]
                 if action:
                     pair = (action[0], action[1])
-                    print(f"S value im tryna play: {self.S(pair[0])} which is card {pair[0]}")
+                    print(f"S value im trying to play: {self.S(pair[0])} which is card {pair[0]}")
                     strongerPairs = self.StrongerPairs(pair, deadCards, sortedHand)
                     print(f"Stronger pairs ingame than the one i'm trying to play: {strongerPairs}")
 
