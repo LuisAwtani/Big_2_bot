@@ -158,26 +158,26 @@ class Algorithm:
 
     def tracePlayerProbability(self, state: MatchState, Player: int):
         PlayerHandSize = state.players[Player].handSize
-        NoFullHouse = False
-        NoFlush = False
-        NoFourOfaKind = False
+        NoResponse = []
         playersHistory = self.tricksPlayedByPlayer(state, Player)
         for play in playersHistory:
             toBeat = play[0]
             Response = play[1]
             StoBeat = sorted([self.S(x) for x in toBeat])
             
-
             if toBeat == 'Start':
                 print(f"Player {Player} decided to start round with a {play[1]}")
 
             elif len(toBeat) == 5:
                 if not Response:
-                    print(f"Player {Player} did not respond to 5 card trick!")
+                    trickType, determinantCard = self.TypeOfFiveCardTrick(toBeat)
+                    print(f"Player {Player} did not respond to a {trickType} of order {determinantCard}!")
+                    NoResponse.append((determinantCard, toBeat))
 
             elif len(toBeat) == 3:
                 if not Response:
-                    print(f"Player {Player} did not respond to a 3 card trick of rank {play[0][0]}!")
+                    print(f"Player {Player} did not respond to a triple of rank {play[0][0]}!")
+                    NoResponse.append((play[0][0], toBeat))
 
         return 0
 
