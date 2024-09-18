@@ -1,4 +1,4 @@
-# Currently working Flag: OFF
+# Currently working Flag: ON
 from classes import *
 
 class Algorithm:
