@@ -1,5 +1,7 @@
 from classes import *
 from math import factorial
+FiveCardTrickPriorityOrder = {'Straight Flush': 0, 'FourOfaKind': 1, 'FullHouse': 2, 'Flush': 3, 'Straight': 4}
+
 
 class Algorithm:
 
@@ -139,7 +141,7 @@ class Algorithm:
         PoolSize = 52 - len(SnotConsidered)
         TotalPossibleArrangements = self.PossibleArrangements(PoolSize, PlayerHandSize)
         ArrangementsIncludingCardX = self.PossibleArrangements(PoolSize - 1, PlayerHandSize - 1)
-        # Account for statements
+        # TODO: Account for statements
         
         probability = ArrangementsIncludingCardX / TotalPossibleArrangements
         return probability
