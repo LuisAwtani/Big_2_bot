@@ -1,4 +1,5 @@
 from classes import *
+from math import factorial
 
 class Algorithm:
 
@@ -127,28 +128,42 @@ class Algorithm:
                     toBeat = trick.cards
         return tricks
 
+    # x is total cards in the game, y is the way those cards may be arranged (y < x)
+    def PossibleArrangements(self, x: int, y: int):
+        return factorial(x) // (factorial(x-y) * factorial(y))
+
+
+    # Function estimates probability of PLAYER x holding CARD y
+    def ChancePlayerHoldsCertainCard(self, state: MatchState, Player: int, Scard: int, SnotConsidered: list):
+        PlayerHandSize = state.players[Player].handSize
+        PoolSize = 52 - len(SnotConsidered)
+        TotalPossibleArrangements = self.PossibleArrangements(PoolSize, PlayerHandSize)
+        ArrangementsIncludingCardX = self.PossibleArrangements(PoolSize - 1, PlayerHandSize - 1)
+        # Account for statements
+        
+        probability = ArrangementsIncludingCardX / TotalPossibleArrangements
+        return probability
+
 
     # For every card, what is the prob each player is holding that card
     def gameStartCardProbabilityDistribution(self, state: MatchState, DeadCards: set):
         notConsidered = []
-        for deadCard in DeadCards:
-            notConsidered.append(self.S(deadCard))
+        notConsidered.extend([self.S(x) for x in DeadCards])
+        notConsidered.extend([self.S(x) for x in state.myHand])
+        print(f"Cards not considered are {notConsidered}")
 
-        for card in state.myHand:
-            notConsidered.append(self.S(card))
-
-        dist = []
         ScardsInPlay = [num for num in range(52) if num not in notConsidered]
         CardsInPlayQuantity = len(ScardsInPlay)
+        dist = []
+
         for Scard in ScardsInPlay: 
             for playerNum in range(4):
                 if playerNum != state.myPlayerNum:
                     probabilityVar = state.players[playerNum].handSize / CardsInPlayQuantity
                     dist.append([playerNum, Scard, probabilityVar])
-        print("Probability distibution: (first 10)")
-        for x in range(10):
-            print(f"Player: {dist[x][0]}, card: {self.inverseS(dist[x][1])}, prob: {dist[x][2]} \n")
-
+        #print("Probability distibution: (first 10)")
+        #for x in range(10):
+        #    print(f"Player: {dist[x][0]}, card: {self.inverseS(dist[x][1])}, prob: {dist[x][2]} \n")
         return dist
 
 
@@ -166,6 +181,7 @@ class Algorithm:
         #### Remembers the lowest single card the player didn't answer,
         #### If player plays a single higher card (one that could have beaten the earlier 
         #### card), raises the beaten flag
+
         print(f"Investigating PLayer {Player}'s History")
         for play in playersHistory:
             toBeat = play[0]
@@ -220,11 +236,11 @@ class Algorithm:
         PlayerOppositeMe = (myPlayerNum + 2) % 4
         PlayersNotIncludingMe = [PlayerAfterMe, PlayerOppositeMe, PlayerBeforeMe]
 
-        self.tracePlayerProbability(state, PlayerAfterMe)
+        #self.tracePlayerProbability(state, PlayerAfterMe)
         #self.tracePlayerProbability(state, PlayerOppositeMe)
         #self.tracePlayerProbability(state, PlayerBeforeMe)
         
-        #self.gameStartCardProbabilityDistribution(state, deadCards)
+        self.gameStartCardProbabilityDistribution(state, deadCards)
         #MyCardQuantity = self.cardsHeldByPlayer(myPlayerNum, state.players)
 
         ### Sort hand from lowest to highest card
