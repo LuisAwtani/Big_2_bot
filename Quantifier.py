@@ -119,7 +119,7 @@ class Algorithm:
         GameHistory = state.matchHistory[-1]
 
         for round in GameHistory.gameHistory:
-            toBeat = 'Start'
+            toBeat = ['Start']
             for trick in round:
                 if trick.playerNum == PlayerNum:
                     tricks.append((toBeat, trick.cards))
@@ -160,26 +160,53 @@ class Algorithm:
         PlayerHandSize = state.players[Player].handSize
         NoResponse = []
         playersHistory = self.tricksPlayedByPlayer(state, Player)
+        #print(f"playersHistory variable is: {playersHistory}")
+
+        lowestUnansweredSingle = ['2S', False]  # Card, beaten flag pair
+        #### Remembers the lowest single card the player didn't answer,
+        #### If player plays a single higher card (one that could have beaten the earlier 
+        #### card), raises the beaten flag
+        print(f"Investigating PLayer {Player}'s History")
         for play in playersHistory:
             toBeat = play[0]
             Response = play[1]
-            StoBeat = sorted([self.S(x) for x in toBeat])
+            #print(f"To beat: {toBeat}, play: {Response}")
+            #StoBeat = sorted([self.S(x) for x in toBeat])
             
-            if toBeat == 'Start':
-                print(f"Player {Player} decided to start round with a {play[1]}")
+            if toBeat[0] == 'Start':
+                print(f"Player {Player} decided to start round with {Response}")
+                if len(Response) == 1:
+                    if self.S(Response[0]) < self.S(lowestUnansweredSingle[0]) and state.players[Player].handSize > 3:
+                        # Checks If the card would hv beaten earlier unanswered single card
+                        lowestUnansweredSingle[1] = True
+                        print(f"I think {Response[0]} used to belong to a higher order trick!")
 
             elif len(toBeat) == 5:
                 if not Response:
                     trickType, determinantCard = self.TypeOfFiveCardTrick(toBeat)
                     print(f"Player {Player} did not respond to a {trickType} of order {determinantCard}!")
-                    NoResponse.append((determinantCard, toBeat))
+
 
             elif len(toBeat) == 3:
                 if not Response:
-                    print(f"Player {Player} did not respond to a triple of rank {play[0][0]}!")
-                    NoResponse.append((play[0][0], toBeat))
+                    print(f"Player {Player} did not respond to a triple of rank {toBeat[0]}!")
+   
+            elif len(toBeat) == 2:
+                if not Response:
+                    print(f"Player {Player} did not Respond to Pair {toBeat}")
 
-        return 0
+            elif len(toBeat) == 1:
+                if not Response:
+                    #print(f"Player {Player} did not Respond to 1 card trick: {toBeat[0]}")
+                    if self.S(toBeat[0]) > self.S(lowestUnansweredSingle[0]):
+                        lowestUnansweredSingle[0] = toBeat[0]
+                    
+                else: #if player responded, check the flag
+                    if self.S(Response[0]) < self.S(lowestUnansweredSingle[0]) and state.players[Player].handSize > 3:
+                         # Checks If the card would hv beaten earlier unanswered single card
+                        lowestUnansweredSingle[1] = True
+                        print(f"I think {Response[0]} used to belong to a higher order trick!")
+        return
 
 
 
@@ -193,8 +220,10 @@ class Algorithm:
         PlayerOppositeMe = (myPlayerNum + 2) % 4
         PlayersNotIncludingMe = [PlayerAfterMe, PlayerOppositeMe, PlayerBeforeMe]
 
-
-        self.tracePlayerProbability(state, PlayerBeforeMe)
+        self.tracePlayerProbability(state, PlayerAfterMe)
+        #self.tracePlayerProbability(state, PlayerOppositeMe)
+        #self.tracePlayerProbability(state, PlayerBeforeMe)
+        
         #self.gameStartCardProbabilityDistribution(state, deadCards)
         #MyCardQuantity = self.cardsHeldByPlayer(myPlayerNum, state.players)
 
@@ -231,9 +260,9 @@ class Algorithm:
                         action = [pair[0], pair[1]]
                 if action:
                     pair = (action[0], action[1])
-                    print(f"S value im trying to play: {self.S(pair[0])} which is card {pair[0]}")
+                    #print(f"S value im trying to play: {self.S(pair[0])} which is card {pair[0]}")
                     strongerPairs = self.StrongerPairs(pair, deadCards, sortedHand)
-                    print(f"Stronger pairs ingame than the one i'm trying to play: {strongerPairs}")
+                    #print(f"Stronger pairs ingame than the one i'm trying to play: {strongerPairs}")
 
 
             
