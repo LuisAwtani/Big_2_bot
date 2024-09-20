@@ -206,4 +206,7 @@ class Algorithm:
         # print("ALL COMBINATIONS")
         # print(allCombinations)
 
+        if currentTrick[0] == 0:
+            action = allCombinations[0][-1]
+
         return action, myData
