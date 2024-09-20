@@ -213,91 +213,91 @@ class Algorithm:
             for combination in allCombinations:
                 if combination[0] == 'single':
                     if Algorithm.rankOrder[combination[1]] > Algorithm.rankOrder[currentTrick[1]]:
-                        action = combination[3]
+                        action = combination[-1]
                         break
                     elif Algorithm.rankOrder[combination[1]] == Algorithm.rankOrder[currentTrick[1]]:
                         if Algorithm.suitOrder[combination[2]] > Algorithm.suitOrder[currentTrick[2]]:
-                            action = combination[3]
+                            action = combination[-1]
                             break
 
         elif currentTrick[0] == 'pair':
             for combination in allCombinations:
                 if combination[0] == 'pair':
                     if Algorithm.rankOrder[combination[1]] > Algorithm.rankOrder[currentTrick[1]]:
-                        action = combination[3]
+                        action = combination[-1]
                         break
                     elif Algorithm.rankOrder[combination[1]] == Algorithm.rankOrder[currentTrick[1]]:
                         if Algorithm.suitOrder[combination[2]] > Algorithm.suitOrder[currentTrick[2]]:
-                            action = combination[3]
+                            action = combination[-1]
                             break
                             
         elif currentTrick[0] == 'triple':
             for combination in allCombinations:
                 if combination[0] == 'triple':
                     if Algorithm.rankOrder[combination[1]] > Algorithm.rankOrder[currentTrick[1]]:
-                        action = combination[3]
+                        action = combination[-1]
                         break
 
         elif currentTrick[0] == 'straight':
             for combination in allCombinations:
                 if combination[0] == 'straight':
                     if Algorithm.rankOrder[combination[1]] > Algorithm.rankOrder[currentTrick[1]]:
-                        action = combination[3]
+                        action = combination[-1]
                         break
                     elif Algorithm.rankOrder[combination[1]] == Algorithm.rankOrder[currentTrick[1]]:
                         if Algorithm.suitOrder[combination[2]] > Algorithm.suitOrder[currentTrick[2]]:
-                            action = combination[3]
+                            action = combination[-1]
                             break
                 elif Algorithm.combinationOrder[combination[0]] > Algorithm.combinationOrder[currentTrick[0]]:
-                    action = combination[3]
+                    action = combination[-1]
                     break
 
         elif currentTrick[0] == 'flush':
             for combination in allCombinations:
                 if combination[0] == 'flush':
                     if Algorithm.rankOrder[combination[1]] > Algorithm.rankOrder[currentTrick[1]]:
-                        action = combination[3]
+                        action = combination[-1]
                         break
                     elif Algorithm.rankOrder[combination[1]] == Algorithm.rankOrder[currentTrick[1]]:
                         if Algorithm.suitOrder[combination[2]] > Algorithm.suitOrder[currentTrick[2]]:
-                            action = combination[3]
+                            action = combination[-1]
                             break
                 elif Algorithm.combinationOrder[combination[0]] > Algorithm.combinationOrder[currentTrick[0]]:
-                    action = combination[3]
+                    action = combination[-1]
                     break
         
         elif currentTrick[0] == 'full house':
             for combination in allCombinations:
                 if combination[0] == 'full house':
                     if Algorithm.rankOrder[combination[1]] > Algorithm.rankOrder[currentTrick[1]]:
-                        action = combination[3]
+                        action = combination[-1]
                         break
                 elif Algorithm.combinationOrder[combination[0]] > Algorithm.combinationOrder[currentTrick[0]]:
-                    action = combination[3]
+                    action = combination[-1]
                     break
 
         elif currentTrick[0] == 'four-of-a-kind':
             for combination in allCombinations:
                 if combination[0] == 'four-of-a-kind':
                     if Algorithm.rankOrder[combination[1]] > Algorithm.rankOrder[currentTrick[1]]:
-                        action = combination[3]
+                        action = combination[-1]
                         break
                 elif Algorithm.combinationOrder[combination[0]] > Algorithm.combinationOrder[currentTrick[0]]:
-                    action = combination[3]
+                    action = combination[-1]
                     break
 
         elif currentTrick[0] == 'straight flush':
             for combination in allCombinations:
                 if combination[0] == 'straight flush':
                     if Algorithm.rankOrder[combination[1]] > Algorithm.rankOrder[currentTrick[1]]:
-                        action = combination[3]
+                        action = combination[-1]
                         break
                     elif Algorithm.rankOrder[combination[1]] == Algorithm.rankOrder[currentTrick[1]]:
                         if Algorithm.suitOrder[combination[2]] > Algorithm.suitOrder[currentTrick[2]]:
-                            action = combination[3]
+                            action = combination[-1]
                             break
                 elif Algorithm.combinationOrder[combination[0]] > Algorithm.combinationOrder[currentTrick[0]]:
-                    action = combination[3]
+                    action = combination[-1]
                     break
 
         return action, myData
