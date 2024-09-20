@@ -207,21 +207,21 @@ class Algorithm:
         # print(allCombinations)
 
         if currentTrick[0] == 0:
-            action = allCombinations[0][4]
+            action = allCombinations[0][-1]
 
         else:
             for combination in allCombinations:
                 if combination[0] == currentTrick[0]:
                     if Algorithm.combinationOrder[combination[1]] == Algorithm.combinationOrder[currentTrick[1]]:
                         if Algorithm.rankOrder[combination[2]] > Algorithm.rankOrder[currentTrick[2]]:
-                            action = combination[4]
+                            action = combination[-1]
                             break
                         elif Algorithm.rankOrder[combination[2]] == Algorithm.rankOrder[currentTrick[2]]:
                             if Algorithm.suitOrder[combination[3]] > Algorithm.suitOrder[currentTrick[3]]:
-                                action = combination[4]
+                                action = combination[-1]
                                 break
                     elif Algorithm.combinationOrder[combination[1]] > Algorithm.combinationOrder[currentTrick[1]]:
-                        action = combination[4]
+                        action = combination[-1]
                         break
 
         return action, myData
