@@ -5,7 +5,7 @@ from itertools import combinations, product
 class Algorithm:
     combinationOrder = {'single': 0, 'pair': 1, 'triple': 2, 'straight': 3, 'flush': 4, 'full house': 5, 'four-of-a-kind': 6, 'straight flush': 7}
     rankOrder = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4, '8': 5, '9': 6, 'T': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12}
-    suitOrder = {'D': 0, 'C': 1, 'H': 2, 'S': 3}
+    suitOrder = {'?': 0, 'D': 1, 'C': 2, 'H': 3, 'S': 4}
 
 
     @staticmethod
@@ -130,33 +130,33 @@ class Algorithm:
 
 
     @staticmethod
-    def getCurrentTrickType(trick: Trick): # returns [type, rank to beat, (suit to beat)]
+    def getCurrentTrickType(trick: Trick): # returns [type length, type, rank to beat, suit to beat]
         if trick is None:
-            return ['start']
+            return [0, 'start']
         else:
             trick = Algorithm.sortCards(trick.cards)
             if len(trick) == 5:
                 if trick[0][1] == trick[1][1] == trick[2][1] == trick[3][1] == trick[4][1]:
                     if Algorithm.rankOrder[trick[0][0]] == Algorithm.rankOrder[trick[1][0]] - 1 == Algorithm.rankOrder[trick[2][0]] - 2 == Algorithm.rankOrder[trick[3][0]] - 3 == Algorithm.rankOrder[trick[4][0]] - 4:
-                        return ['straight flush', trick[4][0], trick[4][1]] # type, rank to beat, suit to beat
+                        return [5, 'straight flush', trick[4][0], trick[4][1]]
                     else:
-                        return ['flush', trick[4][0], trick[4][1]] # type, rank to beat, suit to beat
+                        return [5, 'flush', trick[4][0], trick[4][1]]
                 elif Algorithm.rankOrder[trick[0][0]] == Algorithm.rankOrder[trick[1][0]] - 1 == Algorithm.rankOrder[trick[2][0]] - 2 == Algorithm.rankOrder[trick[3][0]] - 3 == Algorithm.rankOrder[trick[4][0]] - 4:
-                    return ['straight', trick[4][0], trick[4][1]] # type, rank to beat, suit to beat
+                    return [5, 'straight', trick[4][0], trick[4][1]]
                 elif trick[1][0] == trick[2][0] == trick[3][0]:
-                    return ['four-of-a-kind', trick[2][0]] # type, rank to beat
+                    return [5, 'four-of-a-kind', trick[2][0], '?']
                 else:
-                    return ['full house', trick[2][0]] # type, rank to beat
+                    return [5, 'full house', trick[2][0], '?']
             elif len(trick) == 3:
-                return ['triple', trick[0][0]] # type, rank to beat
+                return [3, 'triple', trick[0][0], '?']
             elif len(trick) == 2:
-                return ['pair', trick[1][0], trick[1][1]] # type, rank to beat, suit to beat
+                return [2, 'pair', trick[1][0], trick[1][1]]
             else:
-                return ['single', trick[0][0], trick[0][1]] # type, rank to beat, suit to beat
+                return [1, 'single', trick[0][0], trick[0][1]]
 
 
     @staticmethod
-    def getAllCombinations(hand): # returns [[type, rank, (suit), [cards]]]
+    def getAllCombinations(hand): # returns [[type length, type, rank, suit, [cards]]]
         combinations = []
         pairs = Algorithm.findPairs(hand)
         triples = Algorithm.findTriples(hand)
@@ -166,21 +166,21 @@ class Algorithm:
         fourOfAKinds = Algorithm.findFourOfAKinds(hand)
         straightFlushes = Algorithm.findStraightFlushes(hand)
         for card in hand:
-            combinations.append(['single', card[0], card[1], [card]]) # type, rank, suit, cards
+            combinations.append([1, 'single', card[0], card[1], [card]])
         for pair in pairs:
-            combinations.append(['pair', pair[1][0], pair[1][1], pair]) # type, rank, suit, cards
+            combinations.append([2, 'pair', pair[1][0], pair[1][1], pair])
         for triple in triples:
-            combinations.append(['triple', triple[0][0], triple]) # type, rank, cards
+            combinations.append([3, 'triple', triple[0][0], '?', triple])
         for straight in straights:
-            combinations.append(['straight', straight[4][0], straight[4][1], straight]) # type, rank, suit, cards
+            combinations.append([5, 'straight', straight[4][0], straight[4][1], straight])
         for flush in flushes:
-            combinations.append(['flush', flush[4][0], flush[4][1], flush]) # type, rank, suit, cards
+            combinations.append([5, 'flush', flush[4][0], flush[4][1], flush])
         for fullHouse in fullHouses:
-            combinations.append(['full house', fullHouse[2][0], fullHouse]) # type, rank, cards
+            combinations.append([5, 'full house', fullHouse[2][0], '?', fullHouse])
         for fourOfAKind in fourOfAKinds:
-            combinations.append(['four-of-a-kind', fourOfAKind[2][0], fourOfAKind]) # type, rank, cards
+            combinations.append([5, 'four-of-a-kind', fourOfAKind[2][0], '?', fourOfAKind])
         for straightFlush in straightFlushes:
-            combinations.append(['straight flush', straightFlush[4][0], straightFlush[4][1], straightFlush]) # type, rank, suit, cards
+            combinations.append([5, 'straight flush', straightFlush[4][0], straightFlush[4][1], straightFlush]) 
         return combinations
 
 
