@@ -203,7 +203,7 @@ class Algorithm:
 
         # TODO Write your algorithm logic here
 
-        print("BASE MODEL")
+        print("SHIELD V2 MODEL")
 
         myHand = state.myHand
         myHand = Algorithm.sortCards(myHand)
@@ -219,7 +219,50 @@ class Algorithm:
         # print("ALL COMBINATIONS")
         # print(allCombinations)
 
+        playableCombinations = []
+
         if currentTrick[0] == 0:
-            action = allCombinations[0][-1]
+            for combination in allCombinations:
+                if '3D' in combination[-1]:
+                    playableCombinations.append(combination)
+            if len(playableCombinations) == 0:
+                for combination in allCombinations:
+                    playableCombinations.append(combination)
+        else:
+            for combination in allCombinations:
+                if combination[0] == currentTrick[0]:
+                    if Algorithm.combinationOrder[combination[1]] == Algorithm.combinationOrder[currentTrick[1]]:
+                        if Algorithm.rankOrder[combination[2]] > Algorithm.rankOrder[currentTrick[2]]:
+                            playableCombinations.append(combination)
+                        elif Algorithm.rankOrder[combination[2]] == Algorithm.rankOrder[currentTrick[2]]:
+                            if combination[1] == 'flush':
+                                result = Algorithm.compareFlushes(combination[-1], currentTrick[-1])
+                                if result == 1:
+                                    playableCombinations.append(combination)
+                            else:
+                                if Algorithm.suitOrder[combination[3]] > Algorithm.suitOrder[currentTrick[3]]:
+                                    playableCombinations.append(combination)
+                    elif Algorithm.combinationOrder[combination[1]] > Algorithm.combinationOrder[currentTrick[1]]:
+                        playableCombinations.append(combination)
+
+        if len(playableCombinations) == 0:
+            action = []
+        
+        else:
+            playableCombinationInteferenceScores = []
+            minimumInterferenceScore = 1000000000
+            for playableCombination in playableCombinations:
+                interferenceScore = 0
+                for card in playableCombination[-1]:
+                    for combination in allCombinations:
+                        if card in combination[-1]:
+                            interferenceScore += 1
+                playableCombinationInteferenceScores.append(interferenceScore)
+                if interferenceScore < minimumInterferenceScore:
+                    minimumInterferenceScore = interferenceScore
+            for playableCombination, interferenceScore in zip(playableCombinations, playableCombinationInteferenceScores):
+                if interferenceScore == minimumInterferenceScore:
+                    action = playableCombination[-1]
+                    break
 
         return action, myData
