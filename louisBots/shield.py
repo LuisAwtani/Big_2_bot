@@ -236,7 +236,7 @@ class Algorithm:
                             playableCombinations.append(combination)
                         elif Algorithm.rankOrder[combination[2]] == Algorithm.rankOrder[currentTrick[2]]:
                             if combination[1] == 'flush':
-                                result = Algorithm.compareFlushes(combination[-1], Algorithm.sort(toBeat[-1]))
+                                result = Algorithm.compareFlushes(combination[-1], Algorithm.sortCards(toBeat[-1]))
                                 if result == 1:
                                     playableCombinations.append(combination)
                             else:
