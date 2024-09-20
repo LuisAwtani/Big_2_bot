@@ -190,7 +190,7 @@ class Algorithm:
 
         # TODO Write your algorithm logic here
 
-        print("DUM-E V5 MODEL")
+        print("DUM-E FINAL MODEL")
 
         myHand = state.myHand
         myHand = Algorithm.sortCards(myHand)
