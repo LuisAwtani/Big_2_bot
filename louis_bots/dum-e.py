@@ -207,7 +207,7 @@ class Algorithm:
         # print(allCombinations)
 
         if currentTrick[0] == 0:
-            action = allCombinations[0][3]
+            action = allCombinations[0][4]
 
         else:
             for combination in allCombinations:
