@@ -1,7 +1,9 @@
 from classes import *
 from math import factorial
-FiveCardTrickPriorityOrder = {'Straight Flush': 0, 'FourOfaKind': 1, 'FullHouse': 2, 'Flush': 3, 'Straight': 4}
-
+from collections import defaultdict
+from itertools import combinations, product
+rank_order = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2']
+suit_order = {'D': 0, 'C': 1, 'H': 2, 'S': 3}
 
 class Algorithm:
 
@@ -107,22 +109,6 @@ class Algorithm:
         else:
             return "Straight", self.inverseS(Strongest)
         
-    def findFlushes(hand):
-        flushes = []
-        suit_dict = defaultdict(list)
-        for card in hand:
-            suit_dict[card[1]].append(card)
-        for cards in suit_dict.values():
-            if len(cards) >= 5:
-                for flush in combinations(cards, 5):
-                    rank_values = sorted(rankOrder[card[0]] for card in flush)
-                    if rank_values != list(range(rank_values[0], rank_values[0]+5)):
-                        flushes.append(list(flush))
-        return flushes
-
-
-
-
 
     def cardsHeldByPlayer(self, PlayerNum: int, Players: List[Player]):
         cardsHeld = Players[PlayerNum].handSize
@@ -146,65 +132,6 @@ class Algorithm:
     def PossibleArrangements(self, x: int, y: int):
         return factorial(x) // (factorial(x-y) * factorial(y))
 
-
-    # Function estimates probability of PLAYER x holding CARD y
-    def DistributionMaker(self, state: MatchState, Player: int, Scard: int, SnotConsidered: list, noResponse: list):
-        probabilities = []
-        PlayerHandSize = state.players[Player].handSize
-        ScardsInGame = [x for x in range(52) if x not in SnotConsidered]
-        cardsInGame = [self.inverseS(x) for x in ScardsInGame]
-        PoolSize = len(ScardsInGame)
-        TotalPossibleArrangements = self.PossibleArrangements(PoolSize, PlayerHandSize)
-        ArrangementsIncludingCardX = self.PossibleArrangements(PoolSize - 1, PlayerHandSize - 1)
-        DisprovenArrangements = 0
-        CounterOfDisprovenCards = [0 for _ in range(52)]
-        # Search through cards in game to find 5 card combos. There are the ones the player doesn't have
-        flushes = self.findFlushes(cardsInGame)
-        fiverArrangements = self.PossibleArrangements(PoolSize - 5, PlayerHandSize - 5)
-        eachOtherCardArranged = self.PossibleArrangements(PoolSize - 6, PlayerHandSize - 6)
-        DisprovenArrangements += len(flushes) * fiverArrangements
-        for flush in flushes:
-            for card in cardsInGame:
-                if card in flush:
-                    CounterOfDisprovenCards[self.S(card)] += fiverArrangements
-                else:
-                    CounterOfDisprovenCards[self.S(card)] += eachOtherCardArranged
-                
-        TotalPossibleArrangements -= DisprovenArrangements
-        for Scard in range(len(CounterOfDisprovenCards)):
-            DisprovenScenariosWithCardX = CounterOfDisprovenCards[Scard]
-            probabilities.append((Player, self.inverseS(Scard), (ArrangementsIncludingCardX - DisprovenScenariosWithCardX)))
-        return probabilities
-
-
-
-
-
-    # For every card, what is the prob each player is holding that card
-    def gameStartCardProbabilityDistribution(self, state: MatchState, DeadCards: set):
-        notConsidered = []
-        notConsidered.extend([self.S(x) for x in DeadCards])
-        notConsidered.extend([self.S(x) for x in state.myHand])
-        print(f"Cards not considered are {notConsidered}")
-
-        ScardsInPlay = [num for num in range(52) if num not in notConsidered]
-        CardsInPlayQuantity = len(ScardsInPlay)
-        dist = []
-
-        for Scard in ScardsInPlay: 
-            for playerNum in range(4):
-                if playerNum != state.myPlayerNum:
-                    probabilityVar = state.players[playerNum].handSize / CardsInPlayQuantity
-                    dist.append([playerNum, Scard, probabilityVar])
-        #print("Probability distibution: (first 10)")
-        #for x in range(10):
-        #    print(f"Player: {dist[x][0]}, card: {self.inverseS(dist[x][1])}, prob: {dist[x][2]} \n")
-        return dist
-
-
-    def adjustProbabilitiesBasedOnMatchHistory(self, state: MatchState, distribution: list, PLayersNotIncludingMe: list):
-        updatedDist = []
-        return updatedDist
 
     def tracePlayerProbabilityStatements(self, state: MatchState, Player: int):
         PlayerHandSize = state.players[Player].handSize
@@ -259,6 +186,133 @@ class Algorithm:
                         lowestUnansweredSingle[1] = True
                         #print(f"I think {Response[0]} used to belong to a higher order trick!")
         return noResponse, lowestUnansweredSingle
+
+
+    # Helper functions to check various trick types
+    def is_flush(self, hand):
+        suits = [card[1] for card in hand]
+        return len(set(suits)) == 1
+
+    def is_straight(self, hand):
+        hand_ranks = sorted([rank_order.index(card[0]) for card in hand])
+        for i in range(len(hand_ranks) - 4):
+            if hand_ranks[i:i+5] == list(range(hand_ranks[i], hand_ranks[i]+5)):
+                return True
+        return False
+
+    def is_full_house(self, hand):
+        rank_count = {}
+        for card in hand:
+            rank = card[0]
+            rank_count[rank] = rank_count.get(rank, 0) + 1
+        return 3 in rank_count.values() and 2 in rank_count.values()
+
+    def is_four_of_a_kind(self, hand):
+        rank_count = {}
+        for card in hand:
+            rank = card[0]
+            rank_count[rank] = rank_count.get(rank, 0) + 1
+        return 4 in rank_count.values()
+
+    def is_straight_flush(self, hand):
+        return self.is_straight(hand) and self.is_flush(hand)
+
+    def strongest_card(self, hand):
+        """Finds the strongest card in a hand based on the S value."""
+        return min(hand, key=self.S)
+
+    def compare_hands(self, hand1, hand2):
+        """
+        Compare two hands based on their strongest cards using the S function.
+        Returns True if hand1 is weaker than hand2 (i.e., has higher S value), False otherwise.
+        """
+        return self.S(self.strongest_card(hand1)) < self.S(self.strongest_card(hand2))
+
+
+
+    def MakeTableBasedonDisprovenHands(self, cards, trick_type, strongest_card_of_trick, hand_size, playerNum):
+        """
+        Outputs a list of lists, where each sublist is a hand we've disproven
+        (i.e., hands that form a flush, straight, full house, straight flush, or four of a kind),
+        with the strongest card at the 0th index.
+        
+        Parameters:
+        cards (list): The remaining cards in game among the other players.
+        trick_type (str): The type of 5-card trick being compared (flush, straight, full house, etc.).
+        strongest_card_of_trick (str): The strongest card of the already played trick.
+        hand_size (int): The number of cards the player holds.
+        
+        Returns:
+        list: A list of hands (disproven hands) that form the same or stronger type of trick but are weaker than the input trick.
+        """
+        all_k_card_combinations = list(combinations(cards, hand_size))  # Generate all hand_size-card combinations
+        disproven_hands = []
+        
+        # Iterate through all possible k-card hands
+        for hand in all_k_card_combinations:
+            hand = list(hand)
+            valid_5_card_tricks = []
+
+            # Evaluate all 5-card subsets of this k-sized hand
+            for five_card_subset in combinations(hand, 5):
+                five_card_subset = list(five_card_subset)
+
+                # Handle each trick type in descending strength order
+                if trick_type == 'straight flush' and self.is_straight_flush(five_card_subset):
+                    if self.compare_hands(five_card_subset, [strongest_card_of_trick]):
+                        valid_5_card_tricks.append(five_card_subset)
+                elif trick_type == 'four of a kind':
+                    if self.is_four_of_a_kind(five_card_subset):
+                        if self.compare_hands(five_card_subset, [strongest_card_of_trick]):
+                            valid_5_card_tricks.append(five_card_subset)
+                    elif self.is_straight_flush(five_card_subset):  # Stronger than four of a kind, automatically add
+                        valid_5_card_tricks.append(five_card_subset)
+                elif trick_type == 'full house':
+                    if self.is_full_house(five_card_subset):
+                        if self.compare_hands(five_card_subset, [strongest_card_of_trick]):
+                            valid_5_card_tricks.append(five_card_subset)
+                    elif self.is_four_of_a_kind(five_card_subset) or self.is_straight_flush(five_card_subset):
+                        valid_5_card_tricks.append(five_card_subset)
+                elif trick_type == 'flush':
+                    if self.is_flush(five_card_subset):
+                        if self.compare_hands(five_card_subset, [strongest_card_of_trick]):
+                            valid_5_card_tricks.append(five_card_subset)
+                    elif self.is_full_house(five_card_subset) or self.is_four_of_a_kind(five_card_subset) or self.is_straight_flush(five_card_subset):
+                        valid_5_card_tricks.append(five_card_subset)
+                elif trick_type == 'straight':
+                    if self.is_straight(five_card_subset):
+                        if self.compare_hands(five_card_subset, [strongest_card_of_trick]):
+                            valid_5_card_tricks.append(five_card_subset)
+                    elif self.is_flush(five_card_subset) or self.is_full_house(five_card_subset) or self.is_four_of_a_kind(five_card_subset) or self.is_straight_flush(five_card_subset):
+                        valid_5_card_tricks.append(five_card_subset)
+
+            # If valid tricks were found, add the k-sized hand
+            if valid_5_card_tricks:
+                strongest_trick = min(valid_5_card_tricks, key=lambda hand: self.S(self.strongest_card(hand)))  # Pick strongest 5-card trick
+                hand_sorted = sorted(hand, key=self.S)  # Sort entire k-sized hand by strength (S value)
+                disproven_hands.append(hand_sorted)
+
+        table = self.tableGenerator(playerNum, disproven_hands, cards, hand_size)
+        return table
+
+
+    def tableGenerator(self, playerNum: int, disprovenHands: list, cardsInPlay: list, playerHandSize):
+        prb1 = self.PossibleArrangements(len(cardsInPlay), playerHandSize)
+        prb2 = self.PossibleArrangements(len(cardsInPlay)-1, playerHandSize-1) 
+        totalDisprovenScenarios = len(disprovenHands)
+        table = []
+        disprovenList = [0 for _ in range(52)]
+        for hand in disprovenHands:
+            for card in hand:
+                disprovenList[S(card)] += 1
+
+        for card in cardsInPlay:
+            table.append((playerNum, card, (prb2 - disprovenList[S(card)]) / (prb1 - totalDisprovenScenarios)))
+
+        return table
+
+
+
 
 
 
