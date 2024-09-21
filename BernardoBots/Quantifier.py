@@ -87,27 +87,27 @@ class Algorithm:
             else:
                 break
         if counter == 4:
-            return "StraightFlush", self.inverseS(Strongest)
+            return "straight flush", self.inverseS(Strongest)
         
         CardRanks = [self.inverseS(x)[0] for x in Strick]
         if len(set(CardRanks)) == 2: # If only 2 ranks exist in the set, Its Fours' of Full House
             if 4 > CardRanks.count(CardRanks[0]) > 1:  # if its a Full House
                 if CardRanks[2] != CardRanks[0]:   # Find determining (triplet) rank if its full house
-                    return "FullHouse", self.inverseS(Strick[4])
+                    return "full house", self.inverseS(Strick[4])
                 else:
-                    return "FullHouse", self.inverseS(Strongest)
+                    return "full house", self.inverseS(Strongest)
 
             else:  # Else we have Four of a kind
                 if self.inverseS(Strick[1])[0] == self.inverseS(Strick[0])[0]:
-                    return "FourOfaKind", self.inverseS(Strick[0])
+                    return "four of a kind", self.inverseS(Strick[0])
                 else:
-                    return "FourOfaKind", self.inverseS(Strick[1])
+                    return "four of a kind", self.inverseS(Strick[1])
 
         CardSuits = [self.inverseS(x)[1] for x in Strick]
         if len(set(CardSuits)) == 1:
-            return "Flush", self.inverseS(Strongest)
+            return "flush", self.inverseS(Strongest)
         else:
-            return "Straight", self.inverseS(Strongest)
+            return "straight", self.inverseS(Strongest)
         
 
     def cardsHeldByPlayer(self, PlayerNum: int, Players: List[Player]):
@@ -135,8 +135,7 @@ class Algorithm:
 
     def tracePlayerProbabilityStatements(self, state: MatchState, Player: int):
         PlayerHandSize = state.players[Player].handSize
-        noResponse = []
-        SplitUpTricks = []
+        noResponseFives = []
         playersHistory = self.tricksPlayedByPlayer(state, Player)
         #print(f"playersHistory variable is: {playersHistory}")
 
@@ -149,8 +148,6 @@ class Algorithm:
         for play in playersHistory:
             toBeat = play[0]
             Response = play[1]
-            #print(f"To beat: {toBeat}, play: {Response}")
-            #StoBeat = sorted([self.S(x) for x in toBeat])
             
             if toBeat[0] == 'Start':
                 print(f"Player {Player} decided to start round with {Response}")
@@ -163,7 +160,7 @@ class Algorithm:
             elif len(toBeat) == 5:
                 if not Response:
                     trickType, determinantCard = self.TypeOfFiveCardTrick(toBeat)
-                    noResponse.append((trickType, determinantCard, PlayerHandSize))
+                    noResponseFives.append((trickType, determinantCard, PlayerHandSize))
                     #print(f"Player {Player} did not respond to a {trickType} of order {determinantCard}!")
 
             #elif len(toBeat) == 3:
@@ -185,7 +182,7 @@ class Algorithm:
                          # Checks If the card would hv beaten earlier unanswered single card
                         lowestUnansweredSingle[1] = True
                         #print(f"I think {Response[0]} used to belong to a higher order trick!")
-        return noResponse, lowestUnansweredSingle
+        return noResponseFives, lowestUnansweredSingle
 
 
     # Helper functions to check various trick types
@@ -227,7 +224,6 @@ class Algorithm:
         Returns True if hand1 is weaker than hand2 (i.e., has higher S value), False otherwise.
         """
         return self.S(self.strongest_card(hand1)) < self.S(self.strongest_card(hand2))
-
 
 
     def MakeTableBasedonDisprovenHands(self, cards, trick_type, strongest_card_of_trick, hand_size, playerNum):
@@ -304,15 +300,11 @@ class Algorithm:
         disprovenList = [0 for _ in range(52)]
         for hand in disprovenHands:
             for card in hand:
-                disprovenList[S(card)] += 1
+                disprovenList[self.S(card)] += 1
 
         for card in cardsInPlay:
-            table.append((playerNum, card, (prb2 - disprovenList[S(card)]) / (prb1 - totalDisprovenScenarios)))
-
+            table.append((playerNum, card, (prb2 - disprovenList[self.S(card)]) / (prb1 - totalDisprovenScenarios)))
         return table
-
-
-
 
 
 
@@ -326,21 +318,11 @@ class Algorithm:
         PlayerOppositeMe = (myPlayerNum + 2) % 4
         PlayersNotIncludingMe = [PlayerAfterMe, PlayerOppositeMe, PlayerBeforeMe]
 
-        #self.tracePlayerProbability(state, PlayerAfterMe)
-        #self.tracePlayerProbability(state, PlayerOppositeMe)
-        #self.tracePlayerProbability(state, PlayerBeforeMe)
-        
-        self.gameStartCardProbabilityDistribution(state, deadCards)
-        #MyCardQuantity = self.cardsHeldByPlayer(myPlayerNum, state.players)
+        statements = self.tracePlayerProbabilityStatements(state, PlayerAfterMe)
+        print(statements)
 
-        ### Sort hand from lowest to highest card
+
         sortedHand = sorted(state.myHand, key = lambda x : self.S(x), reverse=True) 
-
-        #for x in sortedHand:
-        #    if self.Srel(x,deadCards, sortedHand) == 0:
-        #        print(f"I'm holding the strongest card in the game!: {x}")
-
-
         # If I am the first to play, play my weakest one card trick
         if len(deadCards) == 0: 
             action.append(sortedHand[0])
