@@ -107,6 +107,18 @@ class Algorithm:
         else:
             return "Straight", self.inverseS(Strongest)
         
+    def findFlushes(hand):
+        flushes = []
+        suit_dict = defaultdict(list)
+        for card in hand:
+            suit_dict[card[1]].append(card)
+        for cards in suit_dict.values():
+            if len(cards) >= 5:
+                for flush in combinations(cards, 5):
+                    rank_values = sorted(rankOrder[card[0]] for card in flush)
+                    if rank_values != list(range(rank_values[0], rank_values[0]+5)):
+                        flushes.append(list(flush))
+        return flushes
 
 
 
@@ -136,15 +148,36 @@ class Algorithm:
 
 
     # Function estimates probability of PLAYER x holding CARD y
-    def ChancePlayerHoldsCertainCard(self, state: MatchState, Player: int, Scard: int, SnotConsidered: list):
+    def DistributionMaker(self, state: MatchState, Player: int, Scard: int, SnotConsidered: list, noResponse: list):
+        probabilities = []
         PlayerHandSize = state.players[Player].handSize
-        PoolSize = 52 - len(SnotConsidered)
+        ScardsInGame = [x for x in range(52) if x not in SnotConsidered]
+        cardsInGame = [self.inverseS(x) for x in ScardsInGame]
+        PoolSize = len(ScardsInGame)
         TotalPossibleArrangements = self.PossibleArrangements(PoolSize, PlayerHandSize)
         ArrangementsIncludingCardX = self.PossibleArrangements(PoolSize - 1, PlayerHandSize - 1)
-        # TODO: Account for statements
-        
-        probability = ArrangementsIncludingCardX / TotalPossibleArrangements
-        return probability
+        DisprovenArrangements = 0
+        CounterOfDisprovenCards = [0 for _ in range(52)]
+        # Search through cards in game to find 5 card combos. There are the ones the player doesn't have
+        flushes = self.findFlushes(cardsInGame)
+        fiverArrangements = self.PossibleArrangements(PoolSize - 5, PlayerHandSize - 5)
+        eachOtherCardArranged = self.PossibleArrangements(PoolSize - 6, PlayerHandSize - 6)
+        DisprovenArrangements += len(flushes) * fiverArrangements
+        for flush in flushes:
+            for card in cardsInGame:
+                if card in flush:
+                    CounterOfDisprovenCards[self.S(card)] += fiverArrangements
+                else:
+                    CounterOfDisprovenCards[self.S(card)] += eachOtherCardArranged
+                
+        TotalPossibleArrangements -= DisprovenArrangements
+        for Scard in range(len(CounterOfDisprovenCards)):
+            DisprovenScenariosWithCardX = CounterOfDisprovenCards[Scard]
+            probabilities.append((Player, self.inverseS(Scard), (ArrangementsIncludingCardX - DisprovenScenariosWithCardX)))
+        return probabilities
+
+
+
 
 
     # For every card, what is the prob each player is holding that card
@@ -173,9 +206,10 @@ class Algorithm:
         updatedDist = []
         return updatedDist
 
-    def tracePlayerProbability(self, state: MatchState, Player: int):
+    def tracePlayerProbabilityStatements(self, state: MatchState, Player: int):
         PlayerHandSize = state.players[Player].handSize
-        NoResponse = []
+        noResponse = []
+        SplitUpTricks = []
         playersHistory = self.tricksPlayedByPlayer(state, Player)
         #print(f"playersHistory variable is: {playersHistory}")
 
@@ -197,21 +231,21 @@ class Algorithm:
                     if self.S(Response[0]) < self.S(lowestUnansweredSingle[0]) and state.players[Player].handSize > 3:
                         # Checks If the card would hv beaten earlier unanswered single card
                         lowestUnansweredSingle[1] = True
-                        print(f"I think {Response[0]} used to belong to a higher order trick!")
+                        #print(f"I think {Response[0]} used to belong to a higher order trick!")
 
             elif len(toBeat) == 5:
                 if not Response:
                     trickType, determinantCard = self.TypeOfFiveCardTrick(toBeat)
-                    print(f"Player {Player} did not respond to a {trickType} of order {determinantCard}!")
+                    noResponse.append((trickType, determinantCard, PlayerHandSize))
+                    #print(f"Player {Player} did not respond to a {trickType} of order {determinantCard}!")
 
-
-            elif len(toBeat) == 3:
-                if not Response:
-                    print(f"Player {Player} did not respond to a triple of rank {toBeat[0]}!")
+            #elif len(toBeat) == 3:
+                #if not Response:
+                    #print(f"Player {Player} did not respond to a triple of rank {toBeat[0]}!")
    
-            elif len(toBeat) == 2:
-                if not Response:
-                    print(f"Player {Player} did not Respond to Pair {toBeat}")
+            #elif len(toBeat) == 2:
+                #if not Response:
+                    #print(f"Player {Player} did not Respond to Pair {toBeat}")
 
             elif len(toBeat) == 1:
                 if not Response:
@@ -223,8 +257,8 @@ class Algorithm:
                     if self.S(Response[0]) < self.S(lowestUnansweredSingle[0]) and state.players[Player].handSize > 3:
                          # Checks If the card would hv beaten earlier unanswered single card
                         lowestUnansweredSingle[1] = True
-                        print(f"I think {Response[0]} used to belong to a higher order trick!")
-        return
+                        #print(f"I think {Response[0]} used to belong to a higher order trick!")
+        return noResponse, lowestUnansweredSingle
 
 
 

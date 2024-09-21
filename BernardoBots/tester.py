@@ -1,9 +1,10 @@
 from math import factorial
+from itertools import combinations
 from collections import defaultdict
 from itertools import combinations, product
+rank_order = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2']
+suit_order = {'D': 0, 'C': 1, 'H': 2, 'S': 3}
 
-rankOrder = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4, '8': 5,
-             '9': 6, 'T': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12}
 
 def S(Card: str):
     ranks = ['2', 'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3']
@@ -11,71 +12,90 @@ def S(Card: str):
     rating = ranks.index(Card[0]) * 4 + suits.index(Card[1])
     return rating
 
+def inverseS(rating: int):
+    ranks = ['2', 'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3']
+    suits = ['S', 'H', 'C', 'D']
+    index = rating // 4
+    suitIndex = rating % 4
+    return ranks[index] + suits[suitIndex]
+
+def is_flush(hand):
+    # Helper function to check if a hand is a flush (5 or more cards of the same suit)
+    suits = [card[1] for card in hand]  # Extract the suits from the cards
+    for suit in set(suits):
+        if suits.count(suit) >= 5:
+            return True
+    return False
+
+def is_straight(hand):
+    """Helper function to check if a hand is a straight (5 or more consecutive cards)."""
+    # Extract the ranks from the cards, convert them to indices in rank_order
+    hand_ranks = sorted([rank_order.index(card[:-1]) for card in hand])
+    
+    # Check for 5 consecutive ranks (normal and wrapping)
+    for i in range(len(hand_ranks) - 4):
+        # Check normal straight
+        if hand_ranks[i:i+5] == list(range(hand_ranks[i], hand_ranks[i]+5)):
+            return True
+        # Check wrap-around straight (A-2-3)
+        if hand_ranks[-5:] == [0, 1, 2, 11, 12]:  # 3-4-5-A-2 as a special case
+            return True
+    return False
+
+
+
+def disprovenHands(cards, handSize):
+    all_hands = list(combinations(cards, handSize))  # Generate all handSize-card hands
+    HandsThatWereDisproven = []
+    HandsThatWereDisproven.extend([list(hand) for hand in all_hands if is_flush(hand)])  # Filter out hands that form a flush
+    HandsThatWereDisproven.extend([list(hand) for hand in all_hands if is_flush(hand)])
+    sorted_disproven_hands = [sorted(hand, key=S) for hand in HandsThatWereDisproven]
+    return sorted_disproven_hands
+
+
 def PossibleArrangements(x: int, y: int):
     return factorial(x) // (factorial(x-y) * factorial(y))
 
-def findFlushes(hand):
-    flushes = []
-    suit_dict = defaultdict(list)
-    for card in hand:
-        suit_dict[card[1]].append(card)
-    for cards in suit_dict.values():
-        if len(cards) >= 5:
-            for flush in combinations(cards, 5):
-                rank_values = sorted(rankOrder[card[0]] for card in flush)
-                if rank_values != list(range(rank_values[0], rank_values[0]+5)):
-                    flushes.append(list(flush))
-    return flushes
 
-# Function that counts number of stronger 5 card tricks that the player DIDN'T HAVE including card x
-def DisproverFives(cardsPLayedAfterNoAnswer: list[str], CardsInPLayFunc: list[str], CardInvestigated: str, handSize: int):
-    DisproofCounter = 0
+# Function estimates probability of PLAYER x holding CARD y for all cards in the game
+def DistributionMaker(PlayerHandSize: int, cardsInGame: list, playerNum: int):
+    probabilities = []
+    #ScardsInGame = [x for x in range(52) if x not in SnotConsidered]
+    #cardsInGame = [inverseS(x) for x in ScardsInGame]
+
+    PoolSize = len(cardsInGame)
+    TotalPossibleArrangements = PossibleArrangements(PoolSize, PlayerHandSize)
+    ArrangementsIncludingCardX = PossibleArrangements(PoolSize - 1, PlayerHandSize - 1)
+    CounterOfDisprovenCards = [0 for _ in range(52)]
+
+    DisprovenHands = disprovenHands(cardsInGame, PlayerHandSize)
+    print(f"Found {len(DisprovenHands)} hands that were disproven!")
+
+    for flush in DisprovenHands:
+        for card in flush:
+            CounterOfDisprovenCards[S(card)] += 1
     
-    # Disprove Flushes
-    CardsInPLayFunc = CardsInPLayFunc + cardsPLayedAfterNoAnswer
-    NoOfCardsInPlay = len(CardsInPLayFunc)
-    
-    print(CardsInPLayFunc)
-    LastFewIndeces = [(NoOfCardsInPlay -1 - i) for i in range(len(cardsPLayedAfterNoAnswer))]
-    #print(f"Last few indices are: {LastFewIndeces}")
+    TotalPossibleArrangements -= len(DisprovenHands)
+    for Scard in range(52):
+        if inverseS(Scard) in cardsInGame:
+            DisprovenScenariosWithCardX = CounterOfDisprovenCards[Scard]
+            probabilities.append((playerNum, inverseS(Scard), (ArrangementsIncludingCardX - DisprovenScenariosWithCardX)/ TotalPossibleArrangements))
+    return probabilities
 
-    for i in range(NoOfCardsInPlay):
-        for j in range(i+1, NoOfCardsInPlay):
-            for k in range(j+1, NoOfCardsInPlay):
-                for l in range(k+1, NoOfCardsInPlay):
-                    for m in range(l+1, NoOfCardsInPlay):
-                        #print(f"Checking case: {[CardsInPLayFunc[i], CardsInPLayFunc[j], CardsInPLayFunc[k], CardsInPLayFunc[l], CardsInPLayFunc[m]]}")
-                        # Disprove Flushes
-                        if CardsInPLayFunc[i][1] == CardsInPLayFunc[m][1] and CardsInPLayFunc[i][1] == CardsInPLayFunc[j][1] and CardsInPLayFunc[i][1] == CardsInPLayFunc[k][1] and CardsInPLayFunc[i][1] == CardsInPLayFunc[l][1]:
-                            if CardInvestigated in {CardsInPLayFunc[i],CardsInPLayFunc[j], CardsInPLayFunc[k], CardsInPLayFunc[l], CardsInPLayFunc[m]}:
-                                #print(f"Disproved 1 FLush! If Player held {[CardsInPLayFunc[i], CardsInPLayFunc[j], CardsInPLayFunc[k], CardsInPLayFunc[l], CardsInPLayFunc[m]]}")
-                                DisproofCounter += 1
-    if handSize > 5:
-
-        DisproofCounter = DisproofCounter * PossibleArrangements(NoOfCardsInPlay-5-len(cardsPLayedAfterNoAnswer), handSize-5)
- 
-    print(f"Successfully disproved {DisproofCounter} scenarios where player held card {CardToInvestigate}")
-    return DisproofCounter
 
 # y is size of player's hand
-y = 6
-justPlayed = ['9C']
-CardsInPlay = ['2C', 'QC', 'TH', '8H', '8C', '8D', '7H', '7C', '7D', '4C', '5D', '4S', '4D']
-simplifiedCardsInPlay = ['2C', 'QC', '8C', '7C']
-#print(f" Number of cards in play is {len(CardsInPlay)}")
+playerHandSize = 5
 
-#x is quantity of cards still in the game
-x = len(CardsInPlay)
-print(f"There is {x} cards in play")
+# 8 Cards in play
+CardsInPlay = ['2C', 'QC', '3C', '8H', '8C', '2S', '7C', '4C']
+#CardsInPlay = ['2C', 'QC', '8H', '8C', '7H', '7C', '4C']
 
-prb1 = PossibleArrangements(x, y)
-prb2 = PossibleArrangements(x-1, y-1) 
-CardToInvestigate = CardsInPlay[4]
+prb1 = PossibleArrangements(len(CardsInPlay), playerHandSize)
+prb2 = PossibleArrangements(len(CardsInPlay)-1, playerHandSize-1) 
 print(f"Total possible combinations that the player could hold: {prb1}")
-print(f"Total possible combinations that include card {CardToInvestigate}: {prb2}")
+print(f"Total possible combinations that include card X: {prb2}")
 
-Disprovals = DisproverFives(justPlayed, CardsInPlay, CardToInvestigate, y)
-prb2 -= Disprovals
+# Assumed player does not have any hands containing the flush
+distribution = DistributionMaker(playerHandSize, CardsInPlay, 1)
+print(distribution)
 
-print(y / x)
-print(prb2 / prb1)
