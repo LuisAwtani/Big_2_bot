@@ -143,9 +143,10 @@ def tableGenerator(playerNum: int, disprovenHands: list, cardsInPlay: list, play
     return table
 
 
-CardsInPlay = ['2C', 'QC', '3C', '8H', '8C', '2S', '7C', 'TC', 'AS', '3H', '5C', 'JS', '4C']  # Remaining cards
+#CardsInPlay = ['2C', 'QC', '3C', '8H', '8C', '2S', '7C', 'TC', 'AS', '3H', '5C', 'JS', '4C']  # Remaining cards
+CardsInPlay = ['2C', 'QC', '3C', '8C', '7C', 'AS', '3H', 'TC', '2S', '5C', '8H', 'JS', 'QS']
 handSize = 5  # Player's hand size
-trick_type = 'straight'  # Trick type to compare
+trick_type = 'flush'  # Trick type to compare
 strongest_card_of_trick = 'TD'  # Strongest card in the already played trick
 disproven = disprovenHands(CardsInPlay, trick_type, strongest_card_of_trick, handSize, 1)
 print(disproven)

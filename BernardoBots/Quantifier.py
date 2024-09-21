@@ -159,6 +159,7 @@ class Algorithm:
 
             elif len(toBeat) == 5:
                 if not Response:
+                    print("Soon displaying the five card tricks he didn't respond to")
                     trickType, determinantCard = self.TypeOfFiveCardTrick(toBeat)
                     noResponseFives.append((trickType, determinantCard, PlayerHandSize))
                     #print(f"Player {Player} did not respond to a {trickType} of order {determinantCard}!")
@@ -281,13 +282,13 @@ class Algorithm:
                             valid_5_card_tricks.append(five_card_subset)
                     elif self.is_flush(five_card_subset) or self.is_full_house(five_card_subset) or self.is_four_of_a_kind(five_card_subset) or self.is_straight_flush(five_card_subset):
                         valid_5_card_tricks.append(five_card_subset)
-
             # If valid tricks were found, add the k-sized hand
             if valid_5_card_tricks:
                 strongest_trick = min(valid_5_card_tricks, key=lambda hand: self.S(self.strongest_card(hand)))  # Pick strongest 5-card trick
                 hand_sorted = sorted(hand, key=self.S)  # Sort entire k-sized hand by strength (S value)
                 disproven_hands.append(hand_sorted)
-
+                
+        
         table = self.tableGenerator(playerNum, disproven_hands, cards, hand_size)
         return table
 
@@ -318,8 +319,16 @@ class Algorithm:
         PlayerOppositeMe = (myPlayerNum + 2) % 4
         PlayersNotIncludingMe = [PlayerAfterMe, PlayerOppositeMe, PlayerBeforeMe]
 
-        statements = self.tracePlayerProbabilityStatements(state, PlayerAfterMe)
-        print(statements)
+        cardsStillInGame = [self.inverseS(x) for x in range(52) if x not in deadCards]
+
+        fiveCardStatements, weakestSingle = self.tracePlayerProbabilityStatements(state, PlayerAfterMe)
+        print(f"Player {PlayerAfterMe} did not respond to this fivecardstatement {fiveCardStatements}")
+        if fiveCardStatements:
+            if state.players[PlayerAfterMe].handSize < 8:
+                print("Player After me has less than 8 cards")
+                table = self.MakeTableBasedonDisprovenHands(cardsStillInGame, fiveCardStatements[0][0], fiveCardStatements[0][1], state.players[PlayerAfterMe].handSize, PlayerAfterMe)
+                print("PRINTING TABLE")
+                print(table)
 
 
         sortedHand = sorted(state.myHand, key = lambda x : self.S(x), reverse=True) 
@@ -352,8 +361,6 @@ class Algorithm:
                     strongerPairs = self.StrongerPairs(pair, deadCards, sortedHand)
                     #print(f"Stronger pairs ingame than the one i'm trying to play: {strongerPairs}")
 
-
-            
 
         # If the trick size is 2, 3, or 5, I will pass
 
