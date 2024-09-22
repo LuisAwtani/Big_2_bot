@@ -233,10 +233,10 @@ class Algorithm:
         cards2 = set(trick2[-1])
         return not cards1.isdisjoint(cards2)
 
-    def backtrack(Algorithm, tricks, start, current_arrangement, used_cards):
+    def backtrack(Algorithm, tricks, start, current_arrangement, used_cards, total_cards):
         """Recursive backtracking method to find all valid arrangements."""
-        # Base case: if all tricks are used without conflict, yield the arrangement
-        if start == len(tricks):
+        # Base case: if all cards have been used, yield the arrangement
+        if len(used_cards) == total_cards:
             yield current_arrangement[:]
             return
 
@@ -249,17 +249,17 @@ class Algorithm:
                 # Mark these cards as used and proceed to the next trick
                 current_arrangement.append(trick)
                 used_cards.update(trick_cards)
-                
+
                 # Recursively search for the next trick
-                yield from Algorithm.backtrack(tricks, i + 1, current_arrangement, used_cards)
-                
+                yield from Algorithm.backtrack(tricks, i + 1, current_arrangement, used_cards, total_cards)
+
                 # Backtrack: remove the trick and unmark its cards
                 current_arrangement.pop()
                 used_cards.difference_update(trick_cards)
 
-    def find_trick_arrangements(Algorithm, tricks):
+    def find_trick_arrangements(Algorithm, tricks, total_cards):
         """Public method that takes tricks as input and finds all valid arrangements."""
-        return list(Algorithm.backtrack(tricks, 0, [], set()))
+        return list(Algorithm.backtrack(tricks, 0, [], set(), total_cards))
 
 
     def score_trick(Algorithm, trick, copyofMyHand, deadCards):
@@ -269,11 +269,11 @@ class Algorithm:
 
         score = 0
         if type_of_trick == 'straight flush':
-            score += 50
+            score += 55
         elif type_of_trick == 'four of a kind + single':
-            score += 45
+            score += 50
         elif type_of_trick == 'full house':
-            score += 40
+            score += 45
         elif type_of_trick == 'flush':
             score += 35
         elif type_of_trick == 'straight':
@@ -285,7 +285,7 @@ class Algorithm:
         elif type_of_trick == 'single':
             # Get the Srel value of the card
             card_value = Algorithm.Srel(trick_cards[0], deadCards, copyofMyHand)
-            if 1 < card_value < 3:
+            if 0 <= card_value < 3:
                 score += 20
             elif 3 <= card_value <= 7:
                 score += 10
@@ -346,25 +346,30 @@ class Algorithm:
         # print(currentTrick)
         
         allCombinations = Algorithm.getAllCombinations(myHand)
-        valid_arrangements = Algorithm.find_trick_arrangements(allCombinations)
+        valid_arrangements = Algorithm.find_trick_arrangements(allCombinations, len(myHand))
         #print("Random valid arrangement: ")
         #print(valid_arrangements[random.randint(0, len(valid_arrangements)-1)])
 
         scored_arrangements = Algorithm.score_arrangements(valid_arrangements, copyofMyHand, deadCards)
         
         print("Top 3 arrangements: ")
-        print("")
+        print(" \n ")
         print(scored_arrangements[0])
-        print("")
-        print(scored_arrangements[1])
-        print("")
-        print(scored_arrangements[2])
-        print("")
+        print(" \n ")
+        #print(scored_arrangements[1])
+        #print(" \n ")
+        #print(scored_arrangements[2])
+
+        strategy = [trick[4] for trick in scored_arrangements[0][0]]
+        print(f"strategy : {strategy}")
 
 
-        
+        if '3D' in myHand == 0:
+            for trick in strategy:
+                if '3D' in trick:
+                    action = trick
 
-        if currentTrick[0] == 0:
-            action = allCombinations[0][-1]
+        elif currentTrick[0] == 0:
+            action = myHand[0]
 
         return action, myData
