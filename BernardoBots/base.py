@@ -226,6 +226,70 @@ class Algorithm:
             if Algorithm.S(x) < Algorithm.S(Card):
                 Sval
         return Sval
+    
+    def TypeOfFiveCardTrick(Algorithm, trick: list):
+        Strick = sorted([Algorithm.S(x) for x in trick])
+        Strongest = Strick[0]
+        previous = Strongest
+        counter = 0
+        for i in range(1, 5):
+            if Strick[i] == previous + 4:
+                previous = Strick[i]
+                counter += 1
+            else:
+                break
+        if counter == 4:
+            return "straight flush", Algorithm.inverseS(Strongest)
+        
+        CardRanks = [Algorithm.inverseS(x)[0] for x in Strick]
+        if len(set(CardRanks)) == 2: # If only 2 ranks exist in the set, Its Fours' of Full House
+            if 4 > CardRanks.count(CardRanks[0]) > 1:  # if its a Full House
+                if CardRanks[2] != CardRanks[0]:   # Find determining (triplet) rank if its full house
+                    return "full house", Algorithm.inverseS(Strick[4])
+                else:
+                    return "full house", Algorithm.inverseS(Strongest)
+
+            else:  # Else we have Four of a kind
+                if Algorithm.inverseS(Strick[1])[0] == Algorithm.inverseS(Strick[0])[0]:
+                    return "four of a kind", Algorithm.inverseS(Strick[0])
+                else:
+                    return "four of a kind", Algorithm.inverseS(Strick[1])
+
+        CardSuits = [Algorithm.inverseS(x)[1] for x in Strick]
+        if len(set(CardSuits)) == 1:
+            return "flush", Algorithm.inverseS(Strongest)
+        else:
+            return "straight", Algorithm.inverseS(Strongest)
+
+    def is_stronger_trick(Algorithm, trick1_type, trick1_strongest, trick2_type, trick2_strongest):
+        # Define the rankings of five-card trick types (lower rank means weaker trick)
+        trick_rank = {
+            'straight': 0,
+            'flush': 1,
+            'full house': 2,
+            'four of a kind': 3,
+            'straight flush': 4
+        }
+
+
+        # First, compare the trick types
+        if trick_rank[trick1_type] > trick_rank[trick2_type]:
+            return True
+        elif trick_rank[trick1_type] < trick_rank[trick2_type]:
+            return False
+
+        # If trick types are the same, compare the strongest cards
+        trick1_value, trick1_suit = trick1_strongest[:-1], trick1_strongest[-1]
+        trick2_value, trick2_suit = trick2_strongest[:-1], trick2_strongest[-1]
+
+        # Compare card values first
+        if Algorithm.S([trick1_value]) < Algorithm.S([trick2_value]):
+            return True
+        else:
+            return False
+
+
+
 
     def has_overlap(Algorithm, trick1, trick2):
         """Helper method to check if two tricks overlap (use the same cards)."""
@@ -360,16 +424,46 @@ class Algorithm:
         #print(" \n ")
         #print(scored_arrangements[2])
 
-        strategy = [trick[4] for trick in scored_arrangements[0][0]]
+        singles = [trick[4] for trick in scored_arrangements[0][0] if trick[1] == 'single']
+        pairs = [trick[4] for trick in scored_arrangements[0][0] if trick[1] == 'pair']
+        triples = [trick[4] for trick in scored_arrangements[0][0] if trick[1] == 'triple']
+        fives = [trick[4] for trick in scored_arrangements[0][0] if trick[1] != 'triple' and trick[1] != 'pair' and trick[1] != 'single']
+       
+        strategy = singles + pairs + triples + fives    
+            
         print(f"strategy : {strategy}")
-
+        
 
         if '3D' in myHand == 0:
             for trick in strategy:
                 if '3D' in trick:
                     action = trick
 
-        elif currentTrick[0] == 0:
-            action = myHand[0]
+        elif len(toBeat) == 0:
+            for trick in strategy:
+                if len(fives) > 0:
+                    action = strategy[-len(fives)]
+                elif len(triples) > 0:
+                    action = strategy[-len(triples)]
+                elif len(pairs) > 0:
+                    action = strategy[-len(pairs)]
+                else:
+                    action = strategy[0]
+        
+        elif len(toBeat) == 1:
+            StoBeat = Algorithm.S(toBeat[0])
+            for i in range(len(singles)):
+                if Algorithm.S(strategy[i][0]) < StoBeat:
+                    action = strategy[i]
+                    break
 
+        elif len(toBeat) == 5:
+            if len(fives) > 0:
+                trickType, determinant = Algorithm.TypeOfFiveCardTrick(toBeat)
+                for i in range(len(fives)):
+                    challengerTrickType, challengerDeterminant = Algorithm.TypeOfFiveCardTrick(strategy[-i])
+                    if Algorithm.is_stronger_trick(challengerTrickType, challengerDeterminant, trickType, determinant):
+                        action = strategy[-i]
+                        break
+            
         return action, myData
