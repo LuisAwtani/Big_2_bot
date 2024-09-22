@@ -1,6 +1,7 @@
 from classes import *
 from collections import defaultdict
 from itertools import combinations, product
+import random
 
 class Algorithm:
     combinationOrder = {'single': 0, 'pair': 1, 'triple': 2, 'straight': 3, 'flush': 4, 'full house': 5, 'four-of-a-kind': 6, 'straight flush': 7}
@@ -207,6 +208,124 @@ class Algorithm:
         return deadCards
 
 
+    def S(Algorithm, Card: str):
+        ranks = ['2', 'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3']
+        suits = ['S', 'H', 'C', 'D']
+        rating = ranks.index(Card[0]) * 4 + suits.index(Card[1])
+        return rating
+
+    def Srel(Algorithm, Card: str, deadCards: set, copyofMyHand: list):
+        Sval = Algorithm.S(Card)
+        for deadCard in deadCards:
+            if Algorithm.S(deadCard) < Sval:
+                Sval -= 1
+
+        Hand = sorted(copyofMyHand, reverse=True)
+        Hand.remove(Card)
+        for x in Hand:
+            if Algorithm.S(x) < Algorithm.S(Card):
+                Sval
+        return Sval
+
+    def has_overlap(Algorithm, trick1, trick2):
+        """Helper method to check if two tricks overlap (use the same cards)."""
+        cards1 = set(trick1[-1])
+        cards2 = set(trick2[-1])
+        return not cards1.isdisjoint(cards2)
+
+    def backtrack(Algorithm, tricks, start, current_arrangement, used_cards):
+        """Recursive backtracking method to find all valid arrangements."""
+        # Base case: if all tricks are used without conflict, yield the arrangement
+        if start == len(tricks):
+            yield current_arrangement[:]
+            return
+
+        for i in range(start, len(tricks)):
+            trick = tricks[i]
+            trick_cards = set(trick[-1])
+
+            # If the current trick doesn't reuse cards, proceed with recursion
+            if trick_cards.isdisjoint(used_cards):
+                # Mark these cards as used and proceed to the next trick
+                current_arrangement.append(trick)
+                used_cards.update(trick_cards)
+                
+                # Recursively search for the next trick
+                yield from Algorithm.backtrack(tricks, i + 1, current_arrangement, used_cards)
+                
+                # Backtrack: remove the trick and unmark its cards
+                current_arrangement.pop()
+                used_cards.difference_update(trick_cards)
+
+    def find_trick_arrangements(Algorithm, tricks):
+        """Public method that takes tricks as input and finds all valid arrangements."""
+        return list(Algorithm.backtrack(tricks, 0, [], set()))
+
+
+    def score_trick(Algorithm, trick, copyofMyHand, deadCards):
+        """Score individual tricks based on the rules provided."""
+        type_of_trick = trick[1]
+        trick_cards = trick[-1]
+
+        score = 0
+        if type_of_trick == 'straight flush':
+            score += 50
+        elif type_of_trick == 'four of a kind + single':
+            score += 45
+        elif type_of_trick == 'full house':
+            score += 40
+        elif type_of_trick == 'flush':
+            score += 35
+        elif type_of_trick == 'straight':
+            score += 30
+        elif type_of_trick == 'triple':
+            score += 25
+        elif type_of_trick == 'pair':
+            score += 15
+        elif type_of_trick == 'single':
+            # Get the Srel value of the card
+            card_value = Algorithm.Srel(trick_cards[0], deadCards, copyofMyHand)
+            if 1 < card_value < 3:
+                score += 20
+            elif 3 <= card_value <= 7:
+                score += 10
+            else:
+                score += 1
+            if card_value == 0:
+                score += 10  # Bonus for guaranteed control
+
+        # Apply flexibility bonuses
+        if type_of_trick == 'full house':
+            score += 5
+        elif type_of_trick == 'four of a kind + single':
+            score += 3
+
+        return score
+
+    def score_arrangements(Algorithm, arrangements, copyofMyHand, deadCards):
+        """Score the entire arrangement and return them sorted by score."""
+        scored_arrangements = []
+
+        for arrangement in arrangements:
+            total_score = 0
+            trick_types = set()
+
+            # Sum up scores for individual tricks
+            for trick in arrangement:
+                total_score += Algorithm.score_trick(trick, copyofMyHand, deadCards)
+                trick_types.add(trick[1])
+
+            # Apply diversity bonus for distinct combo types
+            total_score += 2 * len(trick_types)
+
+            scored_arrangements.append((arrangement, total_score))
+
+        # Sort by score (descending order)
+        scored_arrangements.sort(key=lambda x: x[1], reverse=True)
+
+        return scored_arrangements
+
+
 
     def getAction(Algorithm, state: MatchState):
         action = []             # The cards you are playing for this trick
@@ -215,28 +334,34 @@ class Algorithm:
 
         # TODO Write your algorithm logic here
 
-
         print("BASE MODEL")
 
         myHand = state.myHand
         myHand = Algorithm.sortCards(myHand)
-        # print("MY HAND")
-        # print(myHand)
+        copyofMyHand = myHand.copy()
+        print("MY HAND")
+        print(myHand)
 
         toBeat = state.toBeat
         currentTrick = Algorithm.getCurrentTrickType(toBeat)
-
-
 
         # print("CURRENT TRICK")
         # print(currentTrick)
         
         allCombinations = Algorithm.getAllCombinations(myHand)
-        print("ALL COMBINATIONS")
-        print(allCombinations[:10])
+        valid_arrangements = Algorithm.find_trick_arrangements(allCombinations)
+        #print("Random valid arrangement: ")
+        #print(valid_arrangements[random.randint(0, len(valid_arrangements)-1)])
+
+        scored_arrangements = Algorithm.score_arrangements(valid_arrangements, copyofMyHand, deadCards)
+        
+        print("Top 3 arrangements: ")
+        print(scored_arrangements[0])
+        print(scored_arrangements[1])
+        print(scored_arrangements[2])
+
 
         if currentTrick[0] == 0:
             action = allCombinations[0][-1]
-
 
         return action, myData
