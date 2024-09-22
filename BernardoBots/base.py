@@ -333,14 +333,11 @@ class Algorithm:
         deadCards = Algorithm.countDeadCards(state.matchHistory[-1])
 
         # TODO Write your algorithm logic here
-
-        print("BASE MODEL")
-
         myHand = state.myHand
         myHand = Algorithm.sortCards(myHand)
         copyofMyHand = myHand.copy()
-        print("MY HAND")
-        print(myHand)
+        #print("MY HAND")
+        #print(myHand)
 
         toBeat = state.toBeat
         currentTrick = Algorithm.getCurrentTrickType(toBeat)
@@ -356,10 +353,16 @@ class Algorithm:
         scored_arrangements = Algorithm.score_arrangements(valid_arrangements, copyofMyHand, deadCards)
         
         print("Top 3 arrangements: ")
+        print("")
         print(scored_arrangements[0])
+        print("")
         print(scored_arrangements[1])
+        print("")
         print(scored_arrangements[2])
+        print("")
 
+
+        
 
         if currentTrick[0] == 0:
             action = allCombinations[0][-1]
