@@ -416,10 +416,10 @@ class Algorithm:
 
         scored_arrangements = Algorithm.score_arrangements(valid_arrangements, copyofMyHand, deadCards)
         
-        print("Top 3 arrangements: ")
-        print(" \n ")
-        print(scored_arrangements[0])
-        print(" \n ")
+        #print("The winning arrangement: ")
+        #print(" \n ")
+        #print(scored_arrangements[0])
+        #print(" \n ")
         #print(scored_arrangements[1])
         #print(" \n ")
         #print(scored_arrangements[2])
@@ -439,7 +439,7 @@ class Algorithm:
                 if '3D' in trick:
                     action = trick
 
-        elif len(toBeat) == 0:
+        elif len(state.toBeat.cards) == 0:
             for trick in strategy:
                 if len(fives) > 0:
                     action = strategy[-len(fives)]
@@ -450,16 +450,16 @@ class Algorithm:
                 else:
                     action = strategy[0]
         
-        elif len(toBeat) == 1:
-            StoBeat = Algorithm.S(toBeat[0])
+        elif len(state.toBeat.cards) == 1:
+            StoBeat = Algorithm.S(state.toBeat.cards[0])
             for i in range(len(singles)):
                 if Algorithm.S(strategy[i][0]) < StoBeat:
                     action = strategy[i]
                     break
 
-        elif len(toBeat) == 5:
+        elif len(state.toBeat.cards) == 5:
             if len(fives) > 0:
-                trickType, determinant = Algorithm.TypeOfFiveCardTrick(toBeat)
+                trickType, determinant = Algorithm.TypeOfFiveCardTrick(state.toBeat.cards)
                 for i in range(len(fives)):
                     challengerTrickType, challengerDeterminant = Algorithm.TypeOfFiveCardTrick(strategy[-i])
                     if Algorithm.is_stronger_trick(challengerTrickType, challengerDeterminant, trickType, determinant):
