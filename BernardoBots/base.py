@@ -195,7 +195,8 @@ class Algorithm:
         for straightFlush in straightFlushes:
             combinations.append([5, 'straight flush', straightFlush[4][0], straightFlush[4][1], straightFlush]) 
         return combinations
-    
+
+
     def countDeadCards(Algorithm, state: GameHistory):
         ThisGame = state.gameHistory
         deadCards = set()
@@ -206,12 +207,14 @@ class Algorithm:
         return deadCards
 
 
+
     def getAction(Algorithm, state: MatchState):
         action = []             # The cards you are playing for this trick
         myData = state.myData   # Communications from the previous iteration
         deadCards = Algorithm.countDeadCards(state.matchHistory[-1])
 
         # TODO Write your algorithm logic here
+
 
         print("BASE MODEL")
 
@@ -222,14 +225,18 @@ class Algorithm:
 
         toBeat = state.toBeat
         currentTrick = Algorithm.getCurrentTrickType(toBeat)
+
+
+
         # print("CURRENT TRICK")
         # print(currentTrick)
         
         allCombinations = Algorithm.getAllCombinations(myHand)
-        # print("ALL COMBINATIONS")
-        # print(allCombinations)
+        print("ALL COMBINATIONS")
+        print(allCombinations[:10])
 
         if currentTrick[0] == 0:
             action = allCombinations[0][-1]
+
 
         return action, myData
