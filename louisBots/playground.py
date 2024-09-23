@@ -1,9 +1,15 @@
-from collections import defaultdict
+from collections import Counter, defaultdict
 from itertools import combinations, product
+import sys
 
 combinationOrder = {'single': 0, 'pair': 1, 'triple': 2, 'straight': 3, 'flush': 4, 'full house': 5, 'four-of-a-kind': 6, 'straight flush': 7}
 rankOrder = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4, '8': 5, '9': 6, 'T': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12}
 suitOrder = {'?': 0, 'D': 1, 'C': 2, 'H': 3, 'S': 4}
+
+
+def sortCards(cards): # returns a list of cards sorted by rank and suit
+    return sorted(cards, key=lambda card: (rankOrder.get(card[0], 99), suitOrder.get(card[1], 99)))
+
 
 def findPairs(hand):
     pairs = []
@@ -154,8 +160,90 @@ def getAllCombinations(hand):
     return combinations
 
 
+def getAllOrganisations(hand, allCombinations):
+    # Step 1: Create card to bit mapping
+    cardToBit = {card: 1 << i for i, card in enumerate(hand)}
+    
+    # Step 2: Separate singles and multis
+    singles = [c for c in allCombinations if c[1] == 'single']
+    multis = [c for c in allCombinations if c[1] != 'single']
 
-myHand = ['3D', '4D', '5D', '6D', '7D', '8D', '9D', 'TD', 'JD', 'QD', 'KD', 'AD', '2D']
-allCombinations = getAllCombinations(myHand)
-# print(allCombinations)
-print(len(allCombinations))
+    # Optional: Sort multis to prioritize certain combinations
+    # For example, sort by length descending to try larger combinations first
+    multis.sort(key=lambda x: -x[0])
+
+    # Step 3: Create a mapping from card to single combination for quick lookup
+    singleMap = {c[4][0]: c for c in singles}
+
+    organisations = []
+
+    def backtrack(usedBits, currentOrganisation, startIndex):
+        # If all 13 cards are used (assuming 13 unique cards)
+        if bin(usedBits).count('1') == 13:
+            organisations.append(currentOrganisation.copy())
+            return
+
+        # If we've considered all multis, try to fill the rest with singles
+        if startIndex >= len(multis):
+            # Calculate remaining bits (cards not used)
+            remaining_bits = 0
+            for card, bit in cardToBit.items():
+                remaining_bits |= bit if card not in singleMap else 0
+            # Count remaining singles
+            remainingCards = [card for card in singleMap if not (usedBits & cardToBit[card])]
+            if bin(usedBits | sum([cardToBit[card] for card in remainingCards])).count('1') == 13:
+                # Add all remaining singles
+                orgWithSingles = currentOrganisation.copy()
+                for card in remainingCards:
+                    orgWithSingles.append(singleMap[card])
+                organisations.append(orgWithSingles)
+            return
+
+        for i in range(startIndex, len(multis)):
+            multi = multis[i]
+            multiBits = 0
+            for card in multi[4]:
+                multiBits |= cardToBit[card]
+
+            # Check if multi_bits overlap with used_bits
+            if (multiBits & usedBits) == 0:
+                # Choose this multi
+                currentOrganisation.append(multi)
+                usedBits |= multiBits
+
+                # Recurse with the next combinations
+                backtrack(usedBits, currentOrganisation, i + 1)
+
+                # Backtrack
+                currentOrganisation.pop()
+                usedBits &= ~multiBits
+
+        # After trying all multis, try to add singles if possible
+        remainingCards = [card for card in singleMap if not (usedBits & cardToBit[card])]
+        if bin(usedBits | sum([cardToBit[card] for card in remainingCards])).count('1') == 13:
+            orgWithSingles = currentOrganisation.copy()
+            for card in remainingCards:
+                orgWithSingles.append(singleMap[card])
+            organisations.append(orgWithSingles)
+
+    # Initialize backtracking with used_bits = 0 (no cards used)
+    backtrack(0, [], 0)
+
+    return organisations
+
+
+hand = ['3C', 'TC', '9H', '2C', 'AD', '8S', 'KC', '4S', 'JC', '4D', '9C', 'QC', '8H']
+hand = sortCards(hand)
+print(hand)
+allCombinations = getAllCombinations(hand)
+
+for combination in allCombinations:
+    print(combination)
+
+allOrganisations = getAllOrganisations(hand, allCombinations)
+
+for organisation in allOrganisations:
+    print(organisation)
+
+
+print(len(allOrganisations))

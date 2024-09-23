@@ -1,5 +1,5 @@
 from classes import *
-from collections import defaultdict
+from collections import Counter, defaultdict
 from itertools import combinations, product
 
 class Algorithm:
@@ -197,23 +197,114 @@ class Algorithm:
         return combinations
 
 
+    @staticmethod
+    def getAllOrganisations(hand, allCombinations):
+        # Step 1: Create card to bit mapping
+        cardToBit = {card: 1 << i for i, card in enumerate(hand)}
+
+        # Step 2: Separate singles and multis
+        singles = [c for c in allCombinations if c[1] == 'single']
+        multis = [c for c in allCombinations if c[1] != 'single']
+
+        # Optional: Sort multis to prioritize certain combinations
+        # For example, sort by length descending to try larger combinations first
+        multis.sort(key=lambda x: -x[0])
+
+        # Step 3: Create a mapping from card to single combination for quick lookup
+        singleMap = {c[4][0]: c for c in singles}
+
+        organisations = []
+
+        def backtrack(usedBits, currentOrganisation, startIndex):
+            # If all cards in the hand are used
+            if bin(usedBits).count('1') == len(hand):
+                organisations.append(currentOrganisation.copy())
+                return
+
+            # If we've considered all multis, try to fill the rest with singles
+            if startIndex >= len(multis):
+                # Calculate remaining bits (cards not used)
+                remaining_bits = 0
+                for card, bit in cardToBit.items():
+                    remaining_bits |= bit if card not in singleMap else 0
+                # Count remaining singles
+                remainingCards = [card for card in singleMap if not (usedBits & cardToBit[card])]
+                if bin(usedBits | sum([cardToBit[card] for card in remainingCards])).count('1') == len(hand):
+                    # Add all remaining singles
+                    orgWithSingles = currentOrganisation.copy()
+                    for card in remainingCards:
+                        orgWithSingles.append(singleMap[card])
+                    organisations.append(orgWithSingles)
+                return
+
+            for i in range(startIndex, len(multis)):
+                multi = multis[i]
+                multiBits = 0
+                for card in multi[4]:
+                    multiBits |= cardToBit[card]
+
+                # Check if multi_bits overlap with used_bits
+                if (multiBits & usedBits) == 0:
+                    # Choose this multi
+                    currentOrganisation.append(multi)
+                    usedBits |= multiBits
+
+                    # Recurse with the next combinations
+                    backtrack(usedBits, currentOrganisation, i + 1)
+
+                    # Backtrack
+                    currentOrganisation.pop()
+                    usedBits &= ~multiBits
+
+            # After trying all multis, try to add singles if possible
+            remainingCards = [card for card in singleMap if not (usedBits & cardToBit[card])]
+            if bin(usedBits | sum([cardToBit[card] for card in remainingCards])).count('1') == len(hand):
+                orgWithSingles = currentOrganisation.copy()
+                for card in remainingCards:
+                    orgWithSingles.append(singleMap[card])
+                organisations.append(orgWithSingles)
+
+        # Initialize backtracking with used_bits = 0 (no cards used)
+        backtrack(0, [], 0)
+
+        return organisations
+
+
+    @staticmethod
+    def getAllScores(allOrganisations):
+        scores = []
+        for organisation in allOrganisations:
+            score = 0
+            for combo in organisation:
+                score += Algorithm.combinationOrder[combo[1]]
+            scores.append(score)
+        return scores
+
+
     def getAction(Algorithm, state: MatchState):
         action = []             # The cards you are playing for this trick
         myData = state.myData   # Communications from the previous iteration
 
         # TODO Write your algorithm logic here
 
-        print("LEXICON V1 MODEL")
+        print("LEXICON V1 MODEL TEST")
 
-        # myHand = state.myHand
-        # myHand = Algorithm.sortCards(myHand)
-        myHand = ['3D', '4D', '5D', '6D', '7D', '8D', '9D', 'TD', 'JD', 'QD', 'KD', 'AD', '2D']
-
-        toBeat = state.toBeat
-        currentTrick = Algorithm.getCurrentTrickType(toBeat)
+        hand = state.myHand
+        hand = Algorithm.sortCards(hand)
         
-        allCombinations = Algorithm.getAllCombinations(myHand)
+        allCombinations = Algorithm.getAllCombinations(hand)
 
-        print(allCombinations)
+        allOrganisations = Algorithm.getAllOrganisations(hand, allCombinations)
+
+        allScores = Algorithm.getAllScores(allOrganisations)
+        print(allScores)
+        print(max(allScores))
+
+        bestOrganisation = allOrganisations[allScores.index(max(allScores))]
+        bestOrganisation = bestOrganisation[::-1]
+        print(bestOrganisation)
+
+        currentTrick = Algorithm.getCurrentTrickType(state.toBeat)
+        
 
         return action, myData
