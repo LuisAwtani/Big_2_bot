@@ -6,6 +6,15 @@ class Algorithm:
     combinationOrder = {'single': 0, 'pair': 1, 'triple': 2, 'straight': 3, 'flush': 4, 'full house': 5, 'four-of-a-kind': 6, 'straight flush': 7}
     rankOrder = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4, '8': 5, '9': 6, 'T': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12}
     suitOrder = {'?': 0, 'D': 1, 'C': 2, 'H': 3, 'S': 4}
+    scores = {
+        'straight flush': 50,
+        'four-of-a-kind': 45,
+        'full house': 40,
+        'flush': 35,
+        'straight': 30,
+        'triple': 25,
+        'pair': 15
+    }
 
 
     @staticmethod
@@ -206,9 +215,9 @@ class Algorithm:
         singles = [c for c in allCombinations if c[1] == 'single']
         multis = [c for c in allCombinations if c[1] != 'single']
 
-        # Optional: Sort multis to prioritize certain combinations
-        # For example, sort by length descending to try larger combinations first
-        multis.sort(key=lambda x: -x[0])
+        # # Optional: Sort multis to prioritize certain combinations
+        # # For example, sort by length descending to try larger combinations first
+        # multis.sort(key=lambda x: -x[0])
 
         # Step 3: Create a mapping from card to single combination for quick lookup
         singleMap = {c[4][0]: c for c in singles}
@@ -275,8 +284,18 @@ class Algorithm:
         scores = []
         for organisation in allOrganisations:
             score = 0
-            for combo in organisation:
-                score += Algorithm.combinationOrder[combo[1]]
+            for combination in organisation:
+                if combination[1] == 'single':
+                    if combination[-1][0] == '2S':
+                        score += 30
+                    elif combination[-1][0][0] == '2':
+                        score += 20
+                    elif combination[-1][0][0] == 'A':
+                        score += 10
+                    else:
+                        score += 5
+                else:
+                    score += Algorithm.scores[combination[1]]
             scores.append(score)
         return scores
 
@@ -287,24 +306,57 @@ class Algorithm:
 
         # TODO Write your algorithm logic here
 
-        print("LEXICON V1 MODEL TEST")
+        print("LEXICON V1 MODEL")
 
         hand = state.myHand
         hand = Algorithm.sortCards(hand)
+        print(hand)
         
         allCombinations = Algorithm.getAllCombinations(hand)
 
         allOrganisations = Algorithm.getAllOrganisations(hand, allCombinations)
 
         allScores = Algorithm.getAllScores(allOrganisations)
-        print(allScores)
-        print(max(allScores))
+        # print(allScores)
+        # print(max(allScores))
 
         bestOrganisation = allOrganisations[allScores.index(max(allScores))]
-        bestOrganisation = bestOrganisation[::-1]
+
+        temp = []
+        for combination in bestOrganisation:
+            if combination[1] == 'single':
+                temp.append(combination)
+        for combination in bestOrganisation:
+            if combination[1] != 'single':
+                temp.append(combination)
+        bestOrganisation = temp
         print(bestOrganisation)
 
         currentTrick = Algorithm.getCurrentTrickType(state.toBeat)
         
+        if currentTrick[0] == 0:
+            for combination in bestOrganisation:
+                if '3D' in combination[-1]:
+                    action = combination[-1]
+                    break
+            if action == []:
+                action = allCombinations[0][-1]
+
+        else:
+            for combination in bestOrganisation:
+                if combination[0] == currentTrick[0]:
+                    if Algorithm.combinationOrder[combination[1]] == Algorithm.combinationOrder[currentTrick[1]]:
+                        if Algorithm.rankOrder[combination[2]] > Algorithm.rankOrder[currentTrick[2]]:
+                            action = combination[-1]
+                        elif Algorithm.rankOrder[combination[2]] == Algorithm.rankOrder[currentTrick[2]]:
+                            if combination[1] == 'flush':
+                                result = Algorithm.compareFlushes(combination[-1], Algorithm.sortCards(state.toBeat.cards))
+                                if result == 1:
+                                    action = combination[-1]
+                            else:
+                                if Algorithm.suitOrder[combination[3]] > Algorithm.suitOrder[currentTrick[3]]:
+                                    action = combination[-1]
+                    elif Algorithm.combinationOrder[combination[1]] > Algorithm.combinationOrder[currentTrick[1]]:
+                        action = combination[-1]
 
         return action, myData

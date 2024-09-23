@@ -232,9 +232,12 @@ def getAllOrganisations(hand, allCombinations):
     return organisations
 
 
-hand = ['3C', 'TC', '9H', '2C', 'AD', '8S', 'KC', '4S', 'JC', '4D', '9C', 'QC', '8H']
+hand = ['7C', 'AS', '2H', '9C', '5D', '9H', 'AH', 'AD', 'KH', 'TS', 'QD', 'KD', '3H']
 hand = sortCards(hand)
 print(hand)
+
+sys.exit()
+
 allCombinations = getAllCombinations(hand)
 
 for combination in allCombinations:
