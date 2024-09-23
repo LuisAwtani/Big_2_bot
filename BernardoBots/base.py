@@ -2,6 +2,7 @@ from classes import *
 from collections import defaultdict
 from itertools import combinations, product
 import random
+import math
 
 SCORING = {
     'straight flush': 55,
@@ -254,6 +255,17 @@ class Algorithm:
             if Algorithm.S(x) < Algorithm.S(Card):
                 Sval
         return Sval
+    
+    def SrelTrick(Algorithm, trick: list, deadCards: set, copyofMyHand: list):
+        if len(trick) == 2:
+            cardsInGame = [Algorithm.inverseS(s) for s in range(51) if Algorithm.inverseS(s) not in deadCards and Algorithm.inverseS(s) not in copyofMyHand]
+            quantityofStrongerPairs = Algorithm.findPairs(cardsInGame)
+            return int(math.sqrt(quantityofStrongerPairs)) # S represents how many stronger pairs are in the game
+    
+        elif len(trick) == 3:
+            return 1
+        elif len(trick) == 5:
+            return 1
     
     def get_rank(Algorithm, card):
         rank = card[:-1]  # Remove the suit (last character)
@@ -549,7 +561,7 @@ class Algorithm:
 
         scored_arrangements = Algorithm.score_arrangements(valid_arrangements, copyofMyHand, deadCards, state)
         
-        print("The top 3 arrangements: ")
+        #print("The top 3 arrangements: ")
         #print(" \n ")
         #print(scored_arrangements[0])
         #if len(scored_arrangements) > 3:
@@ -564,9 +576,10 @@ class Algorithm:
         fives = [trick[4] for trick in scored_arrangements[0][0] if trick[1] != 'triple' and trick[1] != 'pair' and trick[1] != 'single']
        
         strategy = singles + pairs + triples + fives    
-            
-        print(f"strategy : {strategy}")
 
+        print(f"strategy : {strategy}")
+        if len(pairs) > 0:
+            print(f"My first pair has pair S value of {Algorithm.SrelTrick(pairs[0], deadCards, copyofMyHand)}")
 
         if len(strategy) <= 3:
             endgame = True
