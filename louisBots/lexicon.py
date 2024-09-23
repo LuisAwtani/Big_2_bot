@@ -3,10 +3,10 @@ from collections import Counter, defaultdict
 from itertools import combinations, product
 
 class Algorithm:
-    combinationOrder = {'single': 0, 'pair': 1, 'triple': 2, 'straight': 3, 'flush': 4, 'full house': 5, 'four-of-a-kind': 6, 'straight flush': 7}
-    rankOrder = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4, '8': 5, '9': 6, 'T': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12}
-    suitOrder = {'?': 0, 'D': 1, 'C': 2, 'H': 3, 'S': 4}
-    scores = {
+    COMBO_ORDER = {'single': 0, 'pair': 1, 'triple': 2, 'straight': 3, 'flush': 4, 'full house': 5, 'four-of-a-kind': 6, 'straight flush': 7}
+    RANK_ORDER = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4, '8': 5, '9': 6, 'T': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12}
+    SUIT_ORDER = {'?': 0, 'D': 1, 'C': 2, 'H': 3, 'S': 4}
+    SCORING = {
         'straight flush': 50,
         'four-of-a-kind': 45,
         'full house': 40,
@@ -19,7 +19,7 @@ class Algorithm:
 
     @staticmethod
     def sortCards(cards): # returns a list of cards sorted by rank and suit
-        return sorted(cards, key=lambda card: (Algorithm.rankOrder.get(card[0], 99), Algorithm.suitOrder.get(card[1], 99)))
+        return sorted(cards, key=lambda card: (Algorithm.RANK_ORDER.get(card[0], 99), Algorithm.SUIT_ORDER.get(card[1], 99)))
 
 
     @staticmethod
@@ -53,7 +53,7 @@ class Algorithm:
         straights = []
         rankDict = defaultdict(list)
         for card in hand:
-            rankValue = Algorithm.rankOrder[card[0]]
+            rankValue = Algorithm.RANK_ORDER[card[0]]
             rankDict[rankValue].append(card)
         rankValues = sorted(rankDict.keys())
         for i in range(len(rankValues) - 4):
@@ -76,7 +76,7 @@ class Algorithm:
         for cards in suitDict.values():
             if len(cards) >= 5:
                 for flush in combinations(cards, 5):
-                    rankValues = sorted(Algorithm.rankOrder[card[0]] for card in flush)
+                    rankValues = sorted(Algorithm.RANK_ORDER[card[0]] for card in flush)
                     if rankValues != list(range(rankValues[0], rankValues[0]+5)):
                         flushes.append(list(flush))
         return flushes
@@ -85,11 +85,11 @@ class Algorithm:
     @staticmethod
     def compareFlushes(flush1, flush2):
         for i in range(4, -1, -1):
-            if Algorithm.rankOrder[flush1[i][0]] > Algorithm.rankOrder[flush2[i][0]]:
+            if Algorithm.RANK_ORDER[flush1[i][0]] > Algorithm.RANK_ORDER[flush2[i][0]]:
                 return 1
-            elif Algorithm.rankOrder[flush1[i][0]] < Algorithm.rankOrder[flush2[i][0]]:
+            elif Algorithm.RANK_ORDER[flush1[i][0]] < Algorithm.RANK_ORDER[flush2[i][0]]:
                 return 0
-        if Algorithm.suitOrder[flush1[0][1]] > Algorithm.suitOrder[flush2[0][1]]:
+        if Algorithm.SUIT_ORDER[flush1[0][1]] > Algorithm.SUIT_ORDER[flush2[0][1]]:
             return 1
         else:
             return 0
@@ -135,7 +135,7 @@ class Algorithm:
         straightFlushes = []
         suitDict = defaultdict(list)
         for card in hand:
-            rankValue = Algorithm.rankOrder[card[0]]
+            rankValue = Algorithm.RANK_ORDER[card[0]]
             suitDict[card[1]].append((rankValue, card))
         for suit, cards in suitDict.items():
             rankValues = sorted(set(rankValue for rankValue, card in cards))
@@ -159,11 +159,11 @@ class Algorithm:
             trick = Algorithm.sortCards(trick.cards)
             if len(trick) == 5:
                 if trick[0][1] == trick[1][1] == trick[2][1] == trick[3][1] == trick[4][1]:
-                    if Algorithm.rankOrder[trick[0][0]] == Algorithm.rankOrder[trick[1][0]] - 1 == Algorithm.rankOrder[trick[2][0]] - 2 == Algorithm.rankOrder[trick[3][0]] - 3 == Algorithm.rankOrder[trick[4][0]] - 4:
+                    if Algorithm.RANK_ORDER[trick[0][0]] == Algorithm.RANK_ORDER[trick[1][0]] - 1 == Algorithm.RANK_ORDER[trick[2][0]] - 2 == Algorithm.RANK_ORDER[trick[3][0]] - 3 == Algorithm.RANK_ORDER[trick[4][0]] - 4:
                         return [5, 'straight flush', trick[4][0], trick[4][1]]
                     else:
                         return [5, 'flush', trick[4][0], trick[4][1]]
-                elif Algorithm.rankOrder[trick[0][0]] == Algorithm.rankOrder[trick[1][0]] - 1 == Algorithm.rankOrder[trick[2][0]] - 2 == Algorithm.rankOrder[trick[3][0]] - 3 == Algorithm.rankOrder[trick[4][0]] - 4:
+                elif Algorithm.RANK_ORDER[trick[0][0]] == Algorithm.RANK_ORDER[trick[1][0]] - 1 == Algorithm.RANK_ORDER[trick[2][0]] - 2 == Algorithm.RANK_ORDER[trick[3][0]] - 3 == Algorithm.RANK_ORDER[trick[4][0]] - 4:
                     return [5, 'straight', trick[4][0], trick[4][1]]
                 elif trick[1][0] == trick[2][0] == trick[3][0]:
                     return [5, 'four-of-a-kind', trick[2][0], '?']
@@ -295,7 +295,7 @@ class Algorithm:
                     else:
                         score += 5
                 else:
-                    score += Algorithm.scores[combination[1]]
+                    score += Algorithm.SCORING[combination[1]]
             scores.append(score)
         return scores
 
@@ -345,18 +345,18 @@ class Algorithm:
         else:
             for combination in bestOrganisation:
                 if combination[0] == currentTrick[0]:
-                    if Algorithm.combinationOrder[combination[1]] == Algorithm.combinationOrder[currentTrick[1]]:
-                        if Algorithm.rankOrder[combination[2]] > Algorithm.rankOrder[currentTrick[2]]:
+                    if Algorithm.COMBO_ORDER[combination[1]] == Algorithm.COMBO_ORDER[currentTrick[1]]:
+                        if Algorithm.RANK_ORDER[combination[2]] > Algorithm.RANK_ORDER[currentTrick[2]]:
                             action = combination[-1]
-                        elif Algorithm.rankOrder[combination[2]] == Algorithm.rankOrder[currentTrick[2]]:
+                        elif Algorithm.RANK_ORDER[combination[2]] == Algorithm.RANK_ORDER[currentTrick[2]]:
                             if combination[1] == 'flush':
                                 result = Algorithm.compareFlushes(combination[-1], Algorithm.sortCards(state.toBeat.cards))
                                 if result == 1:
                                     action = combination[-1]
                             else:
-                                if Algorithm.suitOrder[combination[3]] > Algorithm.suitOrder[currentTrick[3]]:
+                                if Algorithm.SUIT_ORDER[combination[3]] > Algorithm.SUIT_ORDER[currentTrick[3]]:
                                     action = combination[-1]
-                    elif Algorithm.combinationOrder[combination[1]] > Algorithm.combinationOrder[currentTrick[1]]:
+                    elif Algorithm.COMBO_ORDER[combination[1]] > Algorithm.COMBO_ORDER[currentTrick[1]]:
                         action = combination[-1]
 
         return action, myData

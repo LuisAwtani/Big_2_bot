@@ -2,13 +2,22 @@ from collections import Counter, defaultdict
 from itertools import combinations, product
 import sys
 
-combinationOrder = {'single': 0, 'pair': 1, 'triple': 2, 'straight': 3, 'flush': 4, 'full house': 5, 'four-of-a-kind': 6, 'straight flush': 7}
-rankOrder = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4, '8': 5, '9': 6, 'T': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12}
-suitOrder = {'?': 0, 'D': 1, 'C': 2, 'H': 3, 'S': 4}
+COMBO_ORDER = {'single': 0, 'pair': 1, 'triple': 2, 'straight': 3, 'flush': 4, 'full house': 5, 'four-of-a-kind': 6, 'straight flush': 7}
+RANK_ORDER = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4, '8': 5, '9': 6, 'T': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12}
+SUIT_ORDER = {'?': 0, 'D': 1, 'C': 2, 'H': 3, 'S': 4}
+SCORING = {
+    'straight flush': 50,
+    'four-of-a-kind': 45,
+    'full house': 40,
+    'flush': 35,
+    'straight': 30,
+    'triple': 25,
+    'pair': 15
+}
 
 
 def sortCards(cards): # returns a list of cards sorted by rank and suit
-    return sorted(cards, key=lambda card: (rankOrder.get(card[0], 99), suitOrder.get(card[1], 99)))
+    return sorted(cards, key=lambda card: (RANK_ORDER.get(card[0], 99), SUIT_ORDER.get(card[1], 99)))
 
 
 def findPairs(hand):
@@ -39,7 +48,7 @@ def findStraights(hand):
     straights = []
     rankDict = defaultdict(list)
     for card in hand:
-        rankValue = rankOrder[card[0]]
+        rankValue = RANK_ORDER[card[0]]
         rankDict[rankValue].append(card)
     rankValues = sorted(rankDict.keys())
     for i in range(len(rankValues) - 4):
@@ -61,7 +70,7 @@ def findFlushes(hand):
     for cards in suitDict.values():
         if len(cards) >= 5:
             for flush in combinations(cards, 5):
-                rankValues = sorted(rankOrder[card[0]] for card in flush)
+                rankValues = sorted(RANK_ORDER[card[0]] for card in flush)
                 if rankValues != list(range(rankValues[0], rankValues[0]+5)):
                     flushes.append(list(flush))
     return flushes
@@ -69,11 +78,11 @@ def findFlushes(hand):
 
 def compareFlushes(flush1, flush2):
     for i in range(4, -1, -1):
-        if rankOrder[flush1[i][0]] > rankOrder[flush2[i][0]]:
+        if RANK_ORDER[flush1[i][0]] > RANK_ORDER[flush2[i][0]]:
             return 1
-        elif rankOrder[flush1[i][0]] < rankOrder[flush2[i][0]]:
+        elif RANK_ORDER[flush1[i][0]] < RANK_ORDER[flush2[i][0]]:
             return 0
-    if suitOrder[flush1[0][1]] > suitOrder[flush2[0][1]]:
+    if SUIT_ORDER[flush1[0][1]] > SUIT_ORDER[flush2[0][1]]:
         return 1
     else:
         return 0
@@ -116,7 +125,7 @@ def findStraightFlushes(hand):
     straightFlushes = []
     suitDict = defaultdict(list)
     for card in hand:
-        rankValue = rankOrder[card[0]]
+        rankValue = RANK_ORDER[card[0]]
         suitDict[card[1]].append((rankValue, card))
     for suit, cards in suitDict.items():
         rankValues = sorted(set(rankValue for rankValue, card in cards))
@@ -163,14 +172,14 @@ def getAllCombinations(hand):
 def getAllOrganisations(hand, allCombinations):
     # Step 1: Create card to bit mapping
     cardToBit = {card: 1 << i for i, card in enumerate(hand)}
-    
+
     # Step 2: Separate singles and multis
     singles = [c for c in allCombinations if c[1] == 'single']
     multis = [c for c in allCombinations if c[1] != 'single']
 
-    # Optional: Sort multis to prioritize certain combinations
-    # For example, sort by length descending to try larger combinations first
-    multis.sort(key=lambda x: -x[0])
+    # # Optional: Sort multis to prioritize certain combinations
+    # # For example, sort by length descending to try larger combinations first
+    # multis.sort(key=lambda x: -x[0])
 
     # Step 3: Create a mapping from card to single combination for quick lookup
     singleMap = {c[4][0]: c for c in singles}
@@ -178,8 +187,8 @@ def getAllOrganisations(hand, allCombinations):
     organisations = []
 
     def backtrack(usedBits, currentOrganisation, startIndex):
-        # If all 13 cards are used (assuming 13 unique cards)
-        if bin(usedBits).count('1') == 13:
+        # If all cards in the hand are used
+        if bin(usedBits).count('1') == len(hand):
             organisations.append(currentOrganisation.copy())
             return
 
@@ -191,7 +200,7 @@ def getAllOrganisations(hand, allCombinations):
                 remaining_bits |= bit if card not in singleMap else 0
             # Count remaining singles
             remainingCards = [card for card in singleMap if not (usedBits & cardToBit[card])]
-            if bin(usedBits | sum([cardToBit[card] for card in remainingCards])).count('1') == 13:
+            if bin(usedBits | sum([cardToBit[card] for card in remainingCards])).count('1') == len(hand):
                 # Add all remaining singles
                 orgWithSingles = currentOrganisation.copy()
                 for card in remainingCards:
@@ -220,7 +229,7 @@ def getAllOrganisations(hand, allCombinations):
 
         # After trying all multis, try to add singles if possible
         remainingCards = [card for card in singleMap if not (usedBits & cardToBit[card])]
-        if bin(usedBits | sum([cardToBit[card] for card in remainingCards])).count('1') == 13:
+        if bin(usedBits | sum([cardToBit[card] for card in remainingCards])).count('1') == len(hand):
             orgWithSingles = currentOrganisation.copy()
             for card in remainingCards:
                 orgWithSingles.append(singleMap[card])
@@ -232,21 +241,49 @@ def getAllOrganisations(hand, allCombinations):
     return organisations
 
 
-hand = ['7C', 'AS', '2H', '9C', '5D', '9H', 'AH', 'AD', 'KH', 'TS', 'QD', 'KD', '3H']
-hand = sortCards(hand)
-print(hand)
+def getAllScores(allOrganisations):
+    scores = []
+    for organisation in allOrganisations:
+        score = 0
+        for combination in organisation:
+            if combination[1] == 'single':
+                if combination[-1][0] == '2S':
+                    score += 30
+                elif combination[-1][0][0] == '2':
+                    score += 20
+                elif combination[-1][0][0] == 'A':
+                    score += 10
+                else:
+                    score += 5
+            else:
+                score += SCORING[combination[1]]
+        scores.append(score)
+    return scores
 
-sys.exit()
+
+hand = ['3D', '3C', '4S', '7C', '7S', '8D', '9C', '9H', 'TD', 'KH', 'AS', '2D', '2C']
+hand = sortCards(hand)
+print('HAND:')
+print(hand)
+print()
 
 allCombinations = getAllCombinations(hand)
 
-for combination in allCombinations:
-    print(combination)
-
 allOrganisations = getAllOrganisations(hand, allCombinations)
 
-for organisation in allOrganisations:
-    print(organisation)
+allScores = getAllScores(allOrganisations)
+# print(allScores)
+# print(max(allScores))
 
+bestOrganisation = allOrganisations[allScores.index(max(allScores))]
 
-print(len(allOrganisations))
+temp = []
+for combination in bestOrganisation:
+    if combination[1] == 'single':
+        temp.append(combination)
+for combination in bestOrganisation:
+    if combination[1] != 'single':
+        temp.append(combination)
+bestOrganisation = temp
+print('BEST ORGANISATION:')
+print(bestOrganisation)
