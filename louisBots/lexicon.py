@@ -215,10 +215,6 @@ class Algorithm:
         singles = [c for c in allCombinations if c[1] == 'single']
         multis = [c for c in allCombinations if c[1] != 'single']
 
-        # # Optional: Sort multis to prioritize certain combinations
-        # # For example, sort by length descending to try larger combinations first
-        # multis.sort(key=lambda x: -x[0])
-
         # Step 3: Create a mapping from card to single combination for quick lookup
         singleMap = {c[4][0]: c for c in singles}
 

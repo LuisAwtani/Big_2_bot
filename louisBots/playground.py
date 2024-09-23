@@ -177,10 +177,6 @@ def getAllOrganisations(hand, allCombinations):
     singles = [c for c in allCombinations if c[1] == 'single']
     multis = [c for c in allCombinations if c[1] != 'single']
 
-    # # Optional: Sort multis to prioritize certain combinations
-    # # For example, sort by length descending to try larger combinations first
-    # multis.sort(key=lambda x: -x[0])
-
     # Step 3: Create a mapping from card to single combination for quick lookup
     singleMap = {c[4][0]: c for c in singles}
 
@@ -261,7 +257,7 @@ def getAllScores(allOrganisations):
     return scores
 
 
-hand = ['3D', '3C', '4S', '7C', '7S', '8D', '9C', '9H', 'TD', 'KH', 'AS', '2D', '2C']
+hand = ['7D', 'TD', 'QD', '8C', 'KC', 'AC', '6H', '8H', 'KH', 'AH', '3S', 'TS', 'KS']
 hand = sortCards(hand)
 print('HAND:')
 print(hand)
