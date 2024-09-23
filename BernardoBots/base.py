@@ -3,6 +3,24 @@ from collections import defaultdict
 from itertools import combinations, product
 import random
 
+SCORING = {
+    'straight flush': 55,
+    'four-of-a-kind': 50,
+    'full house': 45,
+    'flush': 35,
+    'straight': 30,
+    'triple': 20,
+    'pair': 15
+}
+
+rank_order = {
+    '3': 0, '4': 1, '5': 2, '6': 3, '7': 4,
+    '8': 5, '9': 6, '10': 7, 'J': 8, 'Q': 9,
+    'K': 10, 'A': 11, '2': 12  # '2' is the highest rank in Big 2
+}
+
+
+
 class Algorithm:
     combinationOrder = {'single': 0, 'pair': 1, 'triple': 2, 'straight': 3, 'flush': 4, 'full house': 5, 'four-of-a-kind': 6, 'straight flush': 7}
     rankOrder = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4, '8': 5, '9': 6, 'T': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12}
@@ -213,6 +231,13 @@ class Algorithm:
         suits = ['S', 'H', 'C', 'D']
         rating = ranks.index(Card[0]) * 4 + suits.index(Card[1])
         return rating
+    
+    def inverseS(self, rating: int):
+        ranks = ['2', 'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3']
+        suits = ['S', 'H', 'C', 'D']
+        index = rating // 4
+        suitIndex = rating % 4
+        return ranks[index] + suits[suitIndex]
 
     def Srel(Algorithm, Card: str, deadCards: set, copyofMyHand: list):
         Sval = Algorithm.S(Card)
@@ -222,16 +247,40 @@ class Algorithm:
 
         Hand = sorted(copyofMyHand, reverse=True)
         Hand.remove(Card)
+
         for x in Hand:
             if Algorithm.S(x) < Algorithm.S(Card):
                 Sval
         return Sval
+    
+    def get_rank(Algorithm, card):
+        rank = card[:-1]  # Remove the suit (last character)
+        return rank_order[rank]
+    
+    def check_stronger_flush(flush1, flush2):
+        # Sort both flushes by rank in descending order
+        flush1_sorted = sorted(flush1, key=lambda card: Algorithm.get_rank(card), reverse=True)
+        flush2_sorted = sorted(flush2, key=lambda card: Algorithm.get_rank(card), reverse=True)
+
+        # Compare each card rank in order from highest to lowest
+        for card1, card2 in zip(flush1_sorted, flush2_sorted):
+            if Algorithm.get_rank(card1) > Algorithm.get_rank(card2):
+                return True
+            elif Algorithm.get_rank(card1) < Algorithm.get_rank(card2):
+                return False
+
+        # If all cards are the same in terms of rank, return False (the flushes are equal in strength)
+        print("Fluhes are equal in strength")
+        return True
+
     
     def TypeOfFiveCardTrick(Algorithm, trick: list):
         Strick = sorted([Algorithm.S(x) for x in trick])
         Strongest = Strick[0]
         previous = Strongest
         counter = 0
+        print(f"Strick (initial) is {Strongest}")
+        print(f"Strick is {Strick}")
         for i in range(1, 5):
             if Strick[i] == previous + 4:
                 previous = Strick[i]
@@ -261,7 +310,7 @@ class Algorithm:
         else:
             return "straight", Algorithm.inverseS(Strongest)
 
-    def is_stronger_trick(Algorithm, trick1_type, trick1_strongest, trick2_type, trick2_strongest):
+    def is_stronger_trick(Algorithm, trick1_type, trick1_strongest, trick2_type, trick2_strongest, trick1, trick2):
         # Define the rankings of five-card trick types (lower rank means weaker trick)
         trick_rank = {
             'straight': 0,
@@ -278,12 +327,14 @@ class Algorithm:
         elif trick_rank[trick1_type] < trick_rank[trick2_type]:
             return False
 
-        # If trick types are the same, compare the strongest cards
-        trick1_value, trick1_suit = trick1_strongest[:-1], trick1_strongest[-1]
-        trick2_value, trick2_suit = trick2_strongest[:-1], trick2_strongest[-1]
+        if trick1 == 'flush':
+            if Algorithm.check_stronger_flush(trick1, trick2):
+                return True
+            else:
+                return False
 
         # Compare card values first
-        if Algorithm.S([trick1_value]) < Algorithm.S([trick2_value]):
+        if Algorithm.S(trick1_strongest) < Algorithm.S(trick2_strongest):
             return True
         else:
             return False
@@ -333,19 +384,19 @@ class Algorithm:
 
         score = 0
         if type_of_trick == 'straight flush':
-            score += 55
+            score += SCORING['straight flush']
         elif type_of_trick == 'four of a kind + single':
-            score += 50
+            score += SCORING['four-of-a-kind']
         elif type_of_trick == 'full house':
-            score += 45
+            score += SCORING['full house']
         elif type_of_trick == 'flush':
-            score += 35
+            score += SCORING['flush']
         elif type_of_trick == 'straight':
-            score += 30
+            score += SCORING['straight']
         elif type_of_trick == 'triple':
-            score += 25
+            score += SCORING['triple']
         elif type_of_trick == 'pair':
-            score += 15
+            score += SCORING['pair']
         elif type_of_trick == 'single':
             # Get the Srel value of the card
             card_value = Algorithm.Srel(trick_cards[0], deadCards, copyofMyHand)
@@ -433,13 +484,15 @@ class Algorithm:
             
         print(f"strategy : {strategy}")
         
+        #for single in singles:
+        #    print(f"There is {Algorithm.Srel(single[0], deadCards, copyofMyHand)} stronger singles than {single} in game \n")
 
-        if '3D' in myHand == 0:
+        if '3D' in myHand:
             for trick in strategy:
                 if '3D' in trick:
                     action = trick
 
-        elif len(state.toBeat.cards) == 0:
+        elif state.toBeat is None:
             for trick in strategy:
                 if len(fives) > 0:
                     action = strategy[-len(fives)]
@@ -457,13 +510,16 @@ class Algorithm:
                     action = strategy[i]
                     break
 
+        #elif len(state.toBeat.cards) == 2:
+
         elif len(state.toBeat.cards) == 5:
             if len(fives) > 0:
                 trickType, determinant = Algorithm.TypeOfFiveCardTrick(state.toBeat.cards)
                 for i in range(len(fives)):
-                    challengerTrickType, challengerDeterminant = Algorithm.TypeOfFiveCardTrick(strategy[-i])
-                    if Algorithm.is_stronger_trick(challengerTrickType, challengerDeterminant, trickType, determinant):
-                        action = strategy[-i]
+                    print
+                    challengerTrickType, challengerDeterminant = Algorithm.TypeOfFiveCardTrick(strategy[-1-i])
+                    if Algorithm.is_stronger_trick(challengerTrickType, challengerDeterminant, trickType, determinant, state.toBeat.cards, Algorithm.TypeOfFiveCardTrick(strategy[-1-i])):
+                        action = strategy[-i-1]
                         break
             
         return action, myData
