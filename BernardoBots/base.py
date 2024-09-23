@@ -258,7 +258,28 @@ class Algorithm:
     def get_rank(Algorithm, card):
         rank = card[:-1]  # Remove the suit (last character)
         return rank_order[rank]
-    
+
+
+    def single_card_points(Algorithm, card, deadCards, myHandCopy):
+
+        cardsInGame = 39 - len(deadCards)
+        # Assign bonus for strongest card in the game
+        if Algorithm.Srel(card, deadCards, myHandCopy) == 0:
+            return 30
+        elif Algorithm.Srel(card, deadCards, myHandCopy) < 3 and cardsInGame > 12:
+            return 20
+        
+        elif 3 <= Algorithm.Srel(card, deadCards, myHandCopy) <= 7 and cardsInGame > 12:
+            return 10
+        
+        elif Algorithm.Srel(card, deadCards, myHandCopy) > 28: # if its one of the worst cards in game
+            return -10 - (29 - Algorithm.Srel(card, deadCards, myHandCopy))
+        
+        elif Algorithm.Srel(card, deadCards, myHandCopy) > 12:
+            return -5
+        else:
+            return 1
+
     def check_stronger_flush(flush1, flush2):
         # Sort both flushes by rank in descending order
         flush1_sorted = sorted(flush1, key=lambda card: Algorithm.get_rank(card), reverse=True)
@@ -281,8 +302,7 @@ class Algorithm:
         Strongest = Strick[0]
         previous = Strongest
         counter = 0
-        print(f"Strick (initial) is {Strongest}")
-        print(f"Strick is {Strick}")
+
         for i in range(1, 5):
             if Strick[i] == previous + 4:
                 previous = Strick[i]
@@ -379,7 +399,7 @@ class Algorithm:
         return list(Algorithm.backtrack(tricks, 0, [], set(), total_cards))
 
 
-    def score_trick(Algorithm, trick, copyofMyHand, deadCards):
+    def score_trick(Algorithm, trick, copyofMyHand, deadCards, state: MatchState):
         """Score individual tricks based on the rules provided."""
         type_of_trick = trick[1]
         trick_cards = trick[-1]
@@ -403,17 +423,7 @@ class Algorithm:
         elif type_of_trick == 'single':
             # Get the Srel value of the card
             card_value = Algorithm.Srel(trick_cards[0], deadCards, copyofMyHand)
-            if 0 <= card_value < 3:
-                score += 20
-            elif 3 <= card_value <= 7:
-                score += 10
-            elif card_value < 30:
-                score -= SCORING['bad-single-deduction']
-            else:
-                score += SCORING['single']
-
-            if card_value == 0:
-                score += 10  # Bonus for guaranteed control
+            score += Algorithm.single_card_points(trick_cards[0], deadCards, copyofMyHand)
 
         # Apply flexibility bonuses
         if type_of_trick == 'full house':
@@ -423,7 +433,7 @@ class Algorithm:
 
         return score
 
-    def score_arrangements(Algorithm, arrangements, copyofMyHand, deadCards):
+    def score_arrangements(Algorithm, arrangements, copyofMyHand, deadCards, state: MatchState):
         """Score the entire arrangement and return them sorted by score."""
         scored_arrangements = []
 
@@ -433,7 +443,7 @@ class Algorithm:
 
             # Sum up scores for individual tricks
             for trick in arrangement:
-                total_score += Algorithm.score_trick(trick, copyofMyHand, deadCards)
+                total_score += Algorithm.score_trick(trick, copyofMyHand, deadCards, state)
                 trick_types.add(trick[1])
 
             # Apply diversity bonus for distinct combo types
@@ -496,15 +506,25 @@ class Algorithm:
             else:
                 FiverRounds += 1
         return singleRounds, pairRounds, TripleRounds, FiverRounds
-
+    
+    def playerNumbers(Algorithm, state: MatchState):
+        myPlayerNum = state.myPlayerNum  # Player numbers are 0 to 3
+        PlayerAfterMe = (myPlayerNum + 1) % 4
+        PlayerBeforeMe = (myPlayerNum + 3) % 4
+        PlayerOppositeMe = (myPlayerNum + 2) % 4
+        PlayersNotIncludingMe = [PlayerAfterMe, PlayerOppositeMe, PlayerBeforeMe]
+        return myPlayerNum, PlayersNotIncludingMe
 
     def getAction(Algorithm, state: MatchState):
         action = []             # The cards you are playing for this trick
         myData = state.myData   # Communications from the previous iteration
+
+        myPlayerNum, PlayersNotIncludingMe = Algorithm.playerNumbers(state)
         deadCards = Algorithm.countDeadCards(state.matchHistory[-1])
 
         singleRounds, pairRounds, tripleRounds, fiverRounds = Algorithm.countRounds(state.matchHistory[-1].gameHistory)
-        
+        endgame = False
+        loss_aversion = False
 
 
         # TODO Write your algorithm logic here
@@ -527,16 +547,16 @@ class Algorithm:
         #print("Random valid arrangement: ")
         #print(valid_arrangements[random.randint(0, len(valid_arrangements)-1)])
 
-        scored_arrangements = Algorithm.score_arrangements(valid_arrangements, copyofMyHand, deadCards)
+        scored_arrangements = Algorithm.score_arrangements(valid_arrangements, copyofMyHand, deadCards, state)
         
         print("The top 3 arrangements: ")
-        print(" \n ")
-        print(scored_arrangements[0])
-        if len(scored_arrangements) > 3:
-            print(" \n ")
-            print(scored_arrangements[1])
-            print(" \n ")
-            print(scored_arrangements[2])
+        #print(" \n ")
+        #print(scored_arrangements[0])
+        #if len(scored_arrangements) > 3:
+        #    print(" \n ")
+        #    print(scored_arrangements[1])
+        #    print(" \n ")
+        #    print(scored_arrangements[2])
 
         singles = [trick[4] for trick in scored_arrangements[0][0] if trick[1] == 'single']
         pairs = [trick[4] for trick in scored_arrangements[0][0] if trick[1] == 'pair']
@@ -546,16 +566,28 @@ class Algorithm:
         strategy = singles + pairs + triples + fives    
             
         print(f"strategy : {strategy}")
+
+
+        if len(strategy) <= 3:
+            endgame = True
+            print("entering endgame")
+
+        for playerNum in PlayersNotIncludingMe:
+            if state.players[playerNum].handSize < 3:
+                loss_aversion = True
+                print("ENTERING Loss aversion mode")
+
         
         #for single in singles:
         #    print(f"There is {Algorithm.Srel(single[0], deadCards, copyofMyHand)} stronger singles than {single} in game \n")
-
+        #if endgame is False:
         if '3D' in myHand:
             for trick in strategy:
                 if '3D' in trick:
                     action = trick
-
+        
         elif state.toBeat is None:
+            # Play weakest high order trick
             for trick in strategy:
                 if len(fives) > 0:
                     action = strategy[-len(fives)]
@@ -564,15 +596,22 @@ class Algorithm:
                 elif len(pairs) > 0:
                     action = strategy[-len(pairs)]
                 else:
-                    action = strategy[0]
+                    if loss_aversion is True:
+                        action = strategy[-1]
+                    else:
+                        action = strategy[0]
         
         elif len(state.toBeat.cards) == 1:
             print(f"This is the {singleRounds} singles round")
             StoBeat = Algorithm.S(state.toBeat.cards[0])
-            for i in range(len(singles)):
-                if Algorithm.S(strategy[i][0]) < StoBeat:
-                    action = strategy[i]
-                    break
+            if loss_aversion is False:
+                for i in range(len(singles)):
+                    if Algorithm.S(strategy[i][0]) < StoBeat:
+                        action = strategy[i]
+                        break
+            else:
+                if Algorithm.S(strategy[len(singles) - 1][0]) < StoBeat:
+                    action = strategy[len(singles) - 1]
 
         elif len(state.toBeat.cards) == 2:
             for i in range(len(singles),len(singles) + len(pairs)):
@@ -595,5 +634,13 @@ class Algorithm:
                     if Algorithm.is_stronger_trick(challengerTrickType, challengerDeterminant, trickType, determinant, state.toBeat.cards, Algorithm.TypeOfFiveCardTrick(strategy[-1-i])):
                         action = strategy[-i-1]
                         break
-            
+        #else: # End Game operation
+        #    if len(strategy) == 3:
+        #        action = strategy[1]
+
+        #    elif len(strategy) == 2:
+        #        action = strategy[1]
+        #    else:
+        #        action = strategy[0]
+
         return action, myData
