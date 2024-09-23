@@ -12,7 +12,7 @@ class Algorithm:
         'full house': 40,
         'flush': 35,
         'straight': 30,
-        'triple': 25,
+        'triple': 20,
         'pair': 15
     }
 
@@ -344,15 +344,19 @@ class Algorithm:
                     if Algorithm.COMBO_ORDER[combination[1]] == Algorithm.COMBO_ORDER[currentTrick[1]]:
                         if Algorithm.RANK_ORDER[combination[2]] > Algorithm.RANK_ORDER[currentTrick[2]]:
                             action = combination[-1]
+                            break
                         elif Algorithm.RANK_ORDER[combination[2]] == Algorithm.RANK_ORDER[currentTrick[2]]:
                             if combination[1] == 'flush':
                                 result = Algorithm.compareFlushes(combination[-1], Algorithm.sortCards(state.toBeat.cards))
                                 if result == 1:
                                     action = combination[-1]
+                                    break
                             else:
                                 if Algorithm.SUIT_ORDER[combination[3]] > Algorithm.SUIT_ORDER[currentTrick[3]]:
                                     action = combination[-1]
+                                    break
                     elif Algorithm.COMBO_ORDER[combination[1]] > Algorithm.COMBO_ORDER[currentTrick[1]]:
                         action = combination[-1]
+                        break
 
         return action, myData

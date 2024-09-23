@@ -11,7 +11,7 @@ SCORING = {
     'full house': 40,
     'flush': 35,
     'straight': 30,
-    'triple': 25,
+    'triple': 20,
     'pair': 15
 }
 
