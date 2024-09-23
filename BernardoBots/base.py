@@ -10,7 +10,9 @@ SCORING = {
     'flush': 35,
     'straight': 30,
     'triple': 20,
-    'pair': 15
+    'pair': 15,
+    'single': 1,
+    'bad-single-deduction': 10
 }
 
 rank_order = {
@@ -397,6 +399,7 @@ class Algorithm:
             score += SCORING['triple']
         elif type_of_trick == 'pair':
             score += SCORING['pair']
+            
         elif type_of_trick == 'single':
             # Get the Srel value of the card
             card_value = Algorithm.Srel(trick_cards[0], deadCards, copyofMyHand)
@@ -404,8 +407,11 @@ class Algorithm:
                 score += 20
             elif 3 <= card_value <= 7:
                 score += 10
+            elif card_value < 30:
+                score -= SCORING['bad-single-deduction']
             else:
-                score += 1
+                score += SCORING['single']
+
             if card_value == 0:
                 score += 10  # Bonus for guaranteed control
 
@@ -440,6 +446,56 @@ class Algorithm:
 
         return scored_arrangements
 
+    def is_stronger_pair(Algorithm, pair1, pair2):
+        determinant1 = pair1[0]
+        if Algorithm.S(pair1[1]) < Algorithm.S(pair1[0]):
+            determinant1 = pair1[1]
+
+        determinant2 = pair2[0]
+        if Algorithm.S(pair2[1]) < Algorithm.S(pair2[0]):
+            determinant2 = pair2[1]
+
+        if Algorithm.S(determinant1) < Algorithm.S(determinant2):
+            return True
+        else:
+            return False
+        
+    def is_stronger_triple(Algorithm, triple1, triple2):
+        determinant1 = triple1[0]
+        if Algorithm.S(triple1[1]) < Algorithm.S(triple1[0]):
+            determinant1 = triple1[1]
+        if Algorithm.S(triple1[2]) < Algorithm.S(determinant1):
+            determinant1 = triple1[2]
+
+        determinant2 = triple2[0]
+        if Algorithm.S(triple2[1]) < Algorithm.S(triple2[0]):
+            determinant2 = triple2[1]
+
+        if Algorithm.S(triple2[2]) < Algorithm.S(determinant1):
+            determinant2 = triple2[2]
+
+        if Algorithm.S(determinant1) < Algorithm.S(determinant2):
+            return True
+        else:
+            return False
+
+
+    def countRounds(Algorithm, gameHistory: List[List[Trick]]):
+        singleRounds = 0
+        pairRounds = 0
+        TripleRounds = 0
+        FiverRounds = 0
+        for round in gameHistory:
+            trickSize = len(round[0].cards)
+            if trickSize == 1:
+                singleRounds += 1
+            elif trickSize == 2:
+                pairRounds += 1
+            elif trickSize == 3:
+                TripleRounds += 1
+            else:
+                FiverRounds += 1
+        return singleRounds, pairRounds, TripleRounds, FiverRounds
 
 
     def getAction(Algorithm, state: MatchState):
@@ -447,12 +503,18 @@ class Algorithm:
         myData = state.myData   # Communications from the previous iteration
         deadCards = Algorithm.countDeadCards(state.matchHistory[-1])
 
+        singleRounds, pairRounds, tripleRounds, fiverRounds = Algorithm.countRounds(state.matchHistory[-1].gameHistory)
+        
+
+
         # TODO Write your algorithm logic here
         myHand = state.myHand
         myHand = Algorithm.sortCards(myHand)
         copyofMyHand = myHand.copy()
         #print("MY HAND")
         #print(myHand)
+
+
 
         toBeat = state.toBeat
         currentTrick = Algorithm.getCurrentTrickType(toBeat)
@@ -467,13 +529,14 @@ class Algorithm:
 
         scored_arrangements = Algorithm.score_arrangements(valid_arrangements, copyofMyHand, deadCards)
         
-        #print("The winning arrangement: ")
-        #print(" \n ")
-        #print(scored_arrangements[0])
-        #print(" \n ")
-        #print(scored_arrangements[1])
-        #print(" \n ")
-        #print(scored_arrangements[2])
+        print("The top 3 arrangements: ")
+        print(" \n ")
+        print(scored_arrangements[0])
+        if len(scored_arrangements) > 3:
+            print(" \n ")
+            print(scored_arrangements[1])
+            print(" \n ")
+            print(scored_arrangements[2])
 
         singles = [trick[4] for trick in scored_arrangements[0][0] if trick[1] == 'single']
         pairs = [trick[4] for trick in scored_arrangements[0][0] if trick[1] == 'pair']
@@ -504,13 +567,24 @@ class Algorithm:
                     action = strategy[0]
         
         elif len(state.toBeat.cards) == 1:
+            print(f"This is the {singleRounds} singles round")
             StoBeat = Algorithm.S(state.toBeat.cards[0])
             for i in range(len(singles)):
                 if Algorithm.S(strategy[i][0]) < StoBeat:
                     action = strategy[i]
                     break
 
-        #elif len(state.toBeat.cards) == 2:
+        elif len(state.toBeat.cards) == 2:
+            for i in range(len(singles),len(singles) + len(pairs)):
+                if Algorithm.is_stronger_pair(strategy[i], state.toBeat.cards):
+                    action = strategy[i]
+                    break
+
+        elif len(state.toBeat.cards) == 3:
+            for i in range(len(singles) + len(pairs), len(singles) + len(pairs) + len(triples)):
+                if Algorithm.is_stronger_triple(strategy[i], state.toBeat.cards):
+                    action = strategy[i]
+                    break                
 
         elif len(state.toBeat.cards) == 5:
             if len(fives) > 0:
