@@ -259,7 +259,7 @@ class Algorithm:
     def SrelTrick(Algorithm, trick: list, deadCards: set, copyofMyHand: list):
         if len(trick) == 2:
             cardsInGame = [Algorithm.inverseS(s) for s in range(51) if Algorithm.inverseS(s) not in deadCards and Algorithm.inverseS(s) not in copyofMyHand]
-            quantityofStrongerPairs = Algorithm.findPairs(cardsInGame)
+            quantityofStrongerPairs = len(Algorithm.findPairs(cardsInGame))
             return int(math.sqrt(quantityofStrongerPairs)) # S represents how many stronger pairs are in the game
     
         elif len(trick) == 3:
@@ -285,7 +285,7 @@ class Algorithm:
             return 10
         
         elif Algorithm.Srel(card, deadCards, myHandCopy) > 28: # if its one of the worst cards in game
-            return -10 - (29 - Algorithm.Srel(card, deadCards, myHandCopy))
+            return -15 - (29 - Algorithm.Srel(card, deadCards, myHandCopy))
         
         elif Algorithm.Srel(card, deadCards, myHandCopy) > 12:
             return -5
@@ -588,7 +588,7 @@ class Algorithm:
         for playerNum in PlayersNotIncludingMe:
             if state.players[playerNum].handSize < 3:
                 loss_aversion = True
-                print("ENTERING Loss aversion mode")
+                print(f"ENTERING Loss aversion mode, player {playerNum} has {state.players[playerNum].handSize} cards left")
 
         
         #for single in singles:
@@ -623,8 +623,8 @@ class Algorithm:
                         action = strategy[i]
                         break
             else:
-                if Algorithm.S(strategy[len(singles) - 1][0]) < StoBeat:
-                    action = strategy[len(singles) - 1]
+                if Algorithm.S(copyofMyHand[-1]) < StoBeat: # PLay strongest card if I can
+                    action.append(copyofMyHand[-1])
 
         elif len(state.toBeat.cards) == 2:
             for i in range(len(singles),len(singles) + len(pairs)):
