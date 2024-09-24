@@ -18,9 +18,34 @@ SCORING = {
 
 rank_order = {
     '3': 0, '4': 1, '5': 2, '6': 3, '7': 4,
-    '8': 5, '9': 6, '10': 7, 'J': 8, 'Q': 9,
+    '8': 5, '9': 6, 'T': 7, 'J': 8, 'Q': 9,
     'K': 10, 'A': 11, '2': 12  # '2' is the highest rank in Big 2
 }
+
+def print_cards_matrix_debug(CardsInGame):
+    # Define rank order for Big 2 (2 at the top down to 3)
+    ranks = ['2', 'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3']
+    suits = ['D', 'C', 'H', 'S']  # Diamonds, Clubs, Hearts, Spades
+    
+    # Create a dictionary to store which cards are still in the game
+    cards_left = {rank: {suit: ' ' for suit in suits} for rank in ranks}
+    
+    # Mark the cards that are still in the game
+    for card in CardsInGame:
+        rank = card[:-1]  # Get the rank (e.g. "3" from "3H")
+        suit = card[-1]   # Get the suit (e.g. "H" from "3H")
+        if rank in cards_left and suit in cards_left[rank]:
+            # Use 'D', 'C', 'H', 'S' for Diamonds, Clubs, Hearts, Spades
+            cards_left[rank][suit] = suit
+    
+    # Print the matrix header
+    print(f"{'Rank':<5} {'Diamonds':<8} {'Clubs':<8} {'Hearts':<8} {'Spades':<8}")
+    print('-' * 40)
+    
+    # Print each row of the matrix (each rank and its available suits)
+    for rank in ranks:
+        print(f"{rank:<5} {cards_left[rank]['D']:<8} {cards_left[rank]['C']:<8} {cards_left[rank]['H']:<8} {cards_left[rank]['S']:<8}")
+
 
 
 
@@ -253,19 +278,50 @@ class Algorithm:
 
         for x in Hand:
             if Algorithm.S(x) < Algorithm.S(Card):
-                Sval
+                Sval -= 1
         return Sval
     
     def SrelTrick(Algorithm, trick: list, deadCards: set, copyofMyHand: list):
         if len(trick) == 2:
             cardsInGame = [Algorithm.inverseS(s) for s in range(51) if Algorithm.inverseS(s) not in deadCards and Algorithm.inverseS(s) not in copyofMyHand]
-            quantityofStrongerPairs = len(Algorithm.findPairs(cardsInGame))
-            return int(math.sqrt(quantityofStrongerPairs)) # S represents how many stronger pairs are in the game
-    
+            strongerPairsInGame = Algorithm.findPairs(cardsInGame)
+            quantityofStrongerPairs = 0
+            quantityofWeakerPairs = 0
+
+            for pairs in strongerPairsInGame:
+                if Algorithm.is_stronger_pair(pairs, trick):
+                    quantityofStrongerPairs += 1
+                else:
+                    quantityofWeakerPairs += 1
+
+            syntheticS = int(math.sqrt(quantityofStrongerPairs))
+            if trick[0][0] == 'A' and syntheticS > 1:
+                return 1, quantityofWeakerPairs // 3
+            else:
+                if syntheticS > 3:
+                    return syntheticS, quantityofWeakerPairs // 3
+                else:
+                    return syntheticS, quantityofWeakerPairs // 3
+                # S represents how many stronger pairs are in the game
+     
         elif len(trick) == 3:
-            return 1
+            cardsInGame = [Algorithm.inverseS(s) for s in range(51) if Algorithm.inverseS(s) not in deadCards and Algorithm.inverseS(s) not in copyofMyHand]
+            inputRankIdx = rank_order[trick[0][0]]
+            rankTriplesCounter = [0 for _ in range(13)]
+            belowInputRank = 0
+            aboveInputRank = 0
+            for card in cardsInGame:
+                idx = rank_order[card[0]]
+                rankTriplesCounter[idx] += 1
+                if rankTriplesCounter[idx] == 3:
+                    if idx < inputRankIdx:
+                        belowInputRank += 1
+                    else:
+                        aboveInputRank += 1
+            return aboveInputRank, belowInputRank
+        
         elif len(trick) == 5:
-            return 1
+            return 1, 1
     
     def get_rank(Algorithm, card):
         rank = card[:-1]  # Remove the suit (last character)
@@ -273,7 +329,6 @@ class Algorithm:
 
 
     def single_card_points(Algorithm, card, deadCards, myHandCopy):
-
         cardsInGame = 39 - len(deadCards)
         # Assign bonus for strongest card in the game
         if Algorithm.Srel(card, deadCards, myHandCopy) == 0:
@@ -281,8 +336,8 @@ class Algorithm:
         elif Algorithm.Srel(card, deadCards, myHandCopy) < 3 and cardsInGame > 12:
             return 20
         
-        elif 3 <= Algorithm.Srel(card, deadCards, myHandCopy) <= 7 and cardsInGame > 12:
-            return 10
+        elif 3 <= Algorithm.Srel(card, deadCards, myHandCopy) <= 7 and cardsInGame > 18:
+            return 8
         
         elif Algorithm.Srel(card, deadCards, myHandCopy) > 28: # if its one of the worst cards in game
             return -15 - (29 - Algorithm.Srel(card, deadCards, myHandCopy))
@@ -290,7 +345,8 @@ class Algorithm:
         elif Algorithm.Srel(card, deadCards, myHandCopy) > 12:
             return -5
         else:
-            return 1
+            # This expression gives favours keeping stronger single cards
+            return (1 - (Algorithm.Srel(card, deadCards, myHandCopy) / 39))
 
     def check_stronger_flush(flush1, flush2):
         # Sort both flushes by rank in descending order
@@ -577,9 +633,38 @@ class Algorithm:
        
         strategy = singles + pairs + triples + fives    
 
+
         print(f"strategy : {strategy}")
+        mustBeForced = []
+        controlCards = []
+        if len(singles) > 0:
+            for i in range(len(singles)):
+                if Algorithm.Srel(singles[i][0], deadCards, copyofMyHand) == 0:
+                    controlCards.append(singles[i])
+                elif Algorithm.Srel(singles[i][0], deadCards, copyofMyHand) >= (39 - len(deadCards) - 4):
+                    mustBeForced.append(singles[i])
+
         if len(pairs) > 0:
-            print(f"My first pair has pair S value of {Algorithm.SrelTrick(pairs[0], deadCards, copyofMyHand)}")
+            #print(f"My first pair has S value of [stronger, weaker] {Algorithm.SrelTrick(pairs[0], deadCards, copyofMyHand)}")
+            #cardsInGame = [Algorithm.inverseS(s) for s in range(51) if Algorithm.inverseS(s) not in deadCards and Algorithm.inverseS(s) not in copyofMyHand]
+            #print_cards_matrix_debug(cardsInGame)
+            for i in range(len(pairs)):
+                if Algorithm.SrelTrick(pairs[i], deadCards, copyofMyHand)[0] <= 1:
+                    controlCards.append(pairs[i])
+                elif Algorithm.SrelTrick(pairs[i], deadCards, copyofMyHand)[1] < 3:
+                    mustBeForced.append(pairs[i])
+            
+
+        if len(triples) > 0:
+            #print(f"My first triple has S value of [stronger, weaker] {Algorithm.SrelTrick(triples[0], deadCards, copyofMyHand)}")
+            for i in range(len(triples)):
+                if Algorithm.SrelTrick(triples[i], deadCards, copyofMyHand)[1] <= 2:
+                    controlCards.append(triples[i])
+                elif Algorithm.SrelTrick(triples[i], deadCards, copyofMyHand)[0] <= 2:
+                    mustBeForced.append(triples[i])
+
+        print(f"These tricks are so weak they must be forced: {mustBeForced}")
+        print(f"These tricks are most likely control cards: {controlCards}")
 
         if len(strategy) <= 3:
             endgame = True
