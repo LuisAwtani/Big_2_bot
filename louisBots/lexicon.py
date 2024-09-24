@@ -7,13 +7,14 @@ class Algorithm:
     RANK_ORDER = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4, '8': 5, '9': 6, 'T': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12}
     SUIT_ORDER = {'?': 0, 'D': 1, 'C': 2, 'H': 3, 'S': 4}
     SCORING = {
-        'straight flush': 50,
-        'four-of-a-kind': 45,
-        'full house': 40,
-        'flush': 35,
-        'straight': 30,
-        'triple': 20,
-        'pair': 15
+        'straight flush': 60,
+        'four-of-a-kind': 55,
+        'full house': 52.5,
+        'flush': 50,
+        'straight': 47.5,
+        'triple': 30,
+        'pair': 20,
+        'single': 0
     }
 
 
@@ -276,22 +277,35 @@ class Algorithm:
 
 
     @staticmethod
-    def getAllScores(allOrganisations):
+    def canPlay(organisation, currentTrick):
+        if currentTrick[0] == 0:
+            return True
+        else:
+            for combination in organisation:
+                if combination[0] == currentTrick[0]:
+                    if Algorithm.COMBO_ORDER[combination[1]] == Algorithm.COMBO_ORDER[currentTrick[1]]:
+                        if Algorithm.RANK_ORDER[combination[2]] > Algorithm.RANK_ORDER[currentTrick[2]]:
+                            return True
+                        elif Algorithm.RANK_ORDER[combination[2]] == Algorithm.RANK_ORDER[currentTrick[2]]:
+                            if Algorithm.SUIT_ORDER[combination[3]] > Algorithm.SUIT_ORDER[currentTrick[3]]:
+                                return True
+                    elif Algorithm.COMBO_ORDER[combination[1]] > Algorithm.COMBO_ORDER[currentTrick[1]]:
+                        return True
+
+
+    @staticmethod
+    def getAllScores(allOrganisations, currentTrick):
         scores = []
         for organisation in allOrganisations:
             score = 0
             for combination in organisation:
                 if combination[1] == 'single':
-                    if combination[-1][0] == '2S':
-                        score += 30
-                    elif combination[-1][0][0] == '2':
-                        score += 20
-                    elif combination[-1][0][0] == 'A':
-                        score += 10
-                    else:
-                        score += 5
+                    score += Algorithm.RANK_ORDER[combination[-1][0][0]]
+                    score += (Algorithm.SUIT_ORDER[combination[-1][0][1]] - 1) / 4
                 else:
                     score += Algorithm.SCORING[combination[1]]
+            if Algorithm.canPlay(organisation, currentTrick):
+                score += 5
             scores.append(score)
         return scores
 
@@ -302,7 +316,7 @@ class Algorithm:
 
         # TODO Write your algorithm logic here
 
-        print("LEXICON V1 MODEL")
+        print("LEXICON V6 MODEL")
 
         hand = state.myHand
         hand = Algorithm.sortCards(hand)
@@ -312,7 +326,9 @@ class Algorithm:
 
         allOrganisations = Algorithm.getAllOrganisations(hand, allCombinations)
 
-        allScores = Algorithm.getAllScores(allOrganisations)
+        currentTrick = Algorithm.getCurrentTrickType(state.toBeat)
+
+        allScores = Algorithm.getAllScores(allOrganisations, currentTrick)
         # print(allScores)
         # print(max(allScores))
 
@@ -327,8 +343,6 @@ class Algorithm:
                 temp.append(combination)
         bestOrganisation = temp
         print(bestOrganisation)
-
-        currentTrick = Algorithm.getCurrentTrickType(state.toBeat)
         
         if currentTrick[0] == 0:
             for combination in bestOrganisation:
@@ -336,7 +350,25 @@ class Algorithm:
                     action = combination[-1]
                     break
             if action == []:
-                action = allCombinations[0][-1]
+                for combination in bestOrganisation:
+                    if combination[0] == 5:
+                        action = combination[-1]
+                        break
+            if action == []:
+                for combination in bestOrganisation:
+                    if combination[0] == 3:
+                        action = combination[-1]
+                        break
+            if action == []:
+                for combination in bestOrganisation:
+                    if combination[0] == 2:
+                        action = combination[-1]
+                        break
+            if action == []:
+                for combination in bestOrganisation:
+                    if combination[0] == 1:
+                        action = combination[-1]
+                        break
 
         else:
             for combination in bestOrganisation:
