@@ -321,7 +321,20 @@ class Algorithm:
             return aboveInputRank, belowInputRank
         
         elif len(trick) == 5:
-            return 1, 1
+            trickDetails = Algorithm.TypeOfFiveCardTrick(trick)
+            if trickDetails[0] == 'straight':
+                # If the straight is Jack and lower, it's a codependency
+                if Algorithm.S(trickDetails[1]) >= 16:
+                    return 4, 0
+            elif trickDetails[0] == 'flush':
+                # flushes below jack 
+                return 3, 1
+            elif trickDetails[0] == 'full house':
+                return 1, 1
+            # Assume fours and straight flush are unbeatable
+            else:
+                return 0, 3
+
     
     def get_rank(Algorithm, card):
         rank = card[:-1]  # Remove the suit (last character)
@@ -636,6 +649,7 @@ class Algorithm:
 
         print(f"strategy : {strategy}")
         mustBeForced = []
+        potentialControlCards = []
         controlCards = []
         if len(singles) > 0:
             for i in range(len(singles)):
