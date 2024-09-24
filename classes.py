@@ -2,7 +2,6 @@
 from typing import List
 
 class Trick:
-
     def __init__(self, playerNum: int, cards: List[str]):
         self.playerNum = playerNum  # The player number of the player that played this trick.
         self.cards = cards          # The cards that were played in this trick. E.g. ['3D', '5D', '9D', 'TD', 'KD']. Empty list if trick was passed.

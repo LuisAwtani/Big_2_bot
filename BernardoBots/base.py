@@ -253,6 +253,40 @@ class Algorithm:
                     deadCards.add(card)
         return deadCards
 
+    def lowestUnanswered(Algorithm, state: MatchState):
+        last_tricks = [['2S'], ['2S', '2H'], ['2S', '2H', '2C'], ['2S', 'AS', 'KS', 'QS', 'JS']]
+        for round in state.matchHistory[-1].gameHistory:
+            # Filter out empty lists (which represent passes)
+            non_pass_tricks = [trick.cards for trick in round if trick]
+            #print("Printing unanswered trick...")
+            unansweredTrick = []
+            if len(non_pass_tricks) >= 3 and not non_pass_tricks[-1] and not non_pass_tricks[-2] and not non_pass_tricks[-3]:
+                unansweredTrick = non_pass_tricks[-4]
+
+            #print(unansweredTrick)
+            # Check if there are any non-pass tricks and get the last one
+            if unansweredTrick:
+                if len(unansweredTrick) == 1:
+                    #print("SINGLE")
+                    if Algorithm.S(unansweredTrick[0]) > Algorithm.S(last_tricks[0][0]):
+                        last_tricks[0] = unansweredTrick
+                elif len(unansweredTrick) == 2:
+                    #print("DOUBLE")
+                    if Algorithm.is_stronger_pair(last_tricks[1], unansweredTrick):
+                        last_tricks[1] = unansweredTrick
+                elif len(unansweredTrick) == 3:
+                    #print("TRIPLE")
+                    if Algorithm.is_stronger_triple(last_tricks[2], unansweredTrick):
+                        last_tricks[2] = unansweredTrick
+                elif len(unansweredTrick) == 5:
+                    #print("FIVER")
+                    championType, determinant1 = Algorithm.TypeOfFiveCardTrick(last_tricks[3])
+                    challengerType, determinant2 = Algorithm.TypeOfFiveCardTrick(unansweredTrick)
+                    if Algorithm.is_stronger_trick(championType, determinant1, challengerType, determinant2, last_tricks[3], unansweredTrick):
+                        last_tricks[3] = unansweredTrick
+        return last_tricks 
+
+
 
     def S(Algorithm, Card: str):
         ranks = ['2', 'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3']
@@ -320,6 +354,7 @@ class Algorithm:
                         aboveInputRank += 1
             return aboveInputRank, belowInputRank
         
+        # TODO: introduce memory, remember lowest unbeaten move!
         elif len(trick) == 5:
             trickDetails = Algorithm.TypeOfFiveCardTrick(trick)
             if trickDetails[0] == 'straight':
@@ -553,17 +588,7 @@ class Algorithm:
         
     def is_stronger_triple(Algorithm, triple1, triple2):
         determinant1 = triple1[0]
-        if Algorithm.S(triple1[1]) < Algorithm.S(triple1[0]):
-            determinant1 = triple1[1]
-        if Algorithm.S(triple1[2]) < Algorithm.S(determinant1):
-            determinant1 = triple1[2]
-
         determinant2 = triple2[0]
-        if Algorithm.S(triple2[1]) < Algorithm.S(triple2[0]):
-            determinant2 = triple2[1]
-
-        if Algorithm.S(triple2[2]) < Algorithm.S(determinant1):
-            determinant2 = triple2[2]
 
         if Algorithm.S(determinant1) < Algorithm.S(determinant2):
             return True
@@ -653,9 +678,12 @@ class Algorithm:
         controlCards = []
         if len(singles) > 0:
             for i in range(len(singles)):
-                if Algorithm.Srel(singles[i][0], deadCards, copyofMyHand) == 0:
+                Sval = Algorithm.Srel(singles[i][0], deadCards, copyofMyHand)
+                if Sval == 0:
                     controlCards.append(singles[i])
-                elif Algorithm.Srel(singles[i][0], deadCards, copyofMyHand) >= (39 - len(deadCards) - 4):
+                elif Sval < 4:
+                    potentialControlCards.append(singles[i])
+                elif Sval >= (39 - len(deadCards) - 4):
                     mustBeForced.append(singles[i])
 
         if len(pairs) > 0:
@@ -663,22 +691,33 @@ class Algorithm:
             #cardsInGame = [Algorithm.inverseS(s) for s in range(51) if Algorithm.inverseS(s) not in deadCards and Algorithm.inverseS(s) not in copyofMyHand]
             #print_cards_matrix_debug(cardsInGame)
             for i in range(len(pairs)):
-                if Algorithm.SrelTrick(pairs[i], deadCards, copyofMyHand)[0] <= 1:
+                strongerWeaker = Algorithm.SrelTrick(pairs[i], deadCards, copyofMyHand)
+                if strongerWeaker[0] <= 1:
                     controlCards.append(pairs[i])
-                elif Algorithm.SrelTrick(pairs[i], deadCards, copyofMyHand)[1] < 3:
+                elif strongerWeaker[0] <= 3:
+                    potentialControlCards.append(pairs[i])
+
+                elif strongerWeaker[1] < 3:
                     mustBeForced.append(pairs[i])
             
 
         if len(triples) > 0:
             #print(f"My first triple has S value of [stronger, weaker] {Algorithm.SrelTrick(triples[0], deadCards, copyofMyHand)}")
             for i in range(len(triples)):
-                if Algorithm.SrelTrick(triples[i], deadCards, copyofMyHand)[1] <= 2:
+                strongerWeakerThrees = Algorithm.SrelTrick(triples[i], deadCards, copyofMyHand)
+                if strongerWeakerThrees[0] <= 2:
                     controlCards.append(triples[i])
-                elif Algorithm.SrelTrick(triples[i], deadCards, copyofMyHand)[0] <= 2:
+                elif strongerWeakerThrees[1] <= 3:
                     mustBeForced.append(triples[i])
+                if strongerWeakerThrees[0] <= 5:
+                    potentialControlCards.append(triples[i])
+
+
 
         print(f"These tricks are so weak they must be forced: {mustBeForced}")
-        print(f"These tricks are most likely control cards: {controlCards}")
+        print(f"These tricks might be control cards {potentialControlCards}")
+        print(f"These tricks are definetely control cards: {controlCards}")
+        print(f"\nThese were the lowest unanswered tricks played: {Algorithm.lowestUnanswered(state)}")
 
         if len(strategy) <= 3:
             endgame = True
