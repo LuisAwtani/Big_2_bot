@@ -4,6 +4,14 @@ from itertools import combinations, product
 import random
 import math
 
+trick_rank = {
+    'straight': 0,
+    'flush': 1,
+    'full house': 2,
+    'four of a kind': 3,
+    'straight flush': 4
+}
+
 SCORING = {
     'straight flush': 55,
     'four-of-a-kind': 50,
@@ -450,14 +458,8 @@ class Algorithm:
 
     def is_stronger_trick(Algorithm, trick1_type, trick1_strongest, trick2_type, trick2_strongest, trick1, trick2):
         # Define the rankings of five-card trick types (lower rank means weaker trick)
-        trick_rank = {
-            'straight': 0,
-            'flush': 1,
-            'full house': 2,
-            'four of a kind': 3,
-            'straight flush': 4
-        }
-
+        #print(f"Comparing trick1 {trick1} of type {trick1_type}\n with trick2 {trick2} of type {trick2_type}")
+        #print(f"Trick 1 strongest is {trick1_strongest} and trick 2 strongest is {trick2_strongest}")
 
         # First, compare the trick types
         if trick_rank[trick1_type] > trick_rank[trick2_type]:
@@ -720,19 +722,26 @@ class Algorithm:
 
         if len(fives) > 0:
             for i in range(len(fives)):
-                trick1 = Algorithm.TypeOfFiveCardTrick(fives[i])
-                trick2 = Algorithm.TypeOfFiveCardTrick(lowestUnansweredTricks[3])
-                if Algorithm.is_stronger_trick(trick1[0], trick1[1], trick2[0], trick2[1], fives[i], lowestUnansweredTricks[3]):
+                trick1Type, trick1Determinant = Algorithm.TypeOfFiveCardTrick(fives[i])
+                trick2Type, trick2Determinant = Algorithm.TypeOfFiveCardTrick(lowestUnansweredTricks[3])
+                # If a previosu weaker 5 card went unbeaten, this becomes a control card trick
+                if Algorithm.is_stronger_trick(trick1Type, trick1Determinant, trick2Type, trick2Determinant, fives[i], lowestUnansweredTricks[3]):
                     controlCards.append(fives[i])
-                
+
                 counter = 0
                 for playerNum in PlayersNotIncludingMe:
                     if state.players[playerNum].handSize < 5:
                         counter += 1
-                if counter == 0:
-                    controlCards.append(fives[i])
+                if counter == 3:
+                    if fives[i] not in controlCards:
+                        controlCards.append(fives[i])
+                    mustBeForced.append(fives[i])
 
-
+                # If it's quite weak, mark it a mustForce
+                # If it's a straight lower than QH
+                if trick1Type == 'straight' and Algorithm.S(trick1Determinant) > 13:
+                    mustBeForced.append(fives[i])
+                
 
 
         print(f"These tricks are so weak they must be forced: {mustBeForced}")
@@ -811,9 +820,9 @@ class Algorithm:
             if len(fives) > 0:
                 trickType, determinant = Algorithm.TypeOfFiveCardTrick(state.toBeat.cards)
                 for i in range(len(fives)):
-                    print
                     challengerTrickType, challengerDeterminant = Algorithm.TypeOfFiveCardTrick(strategy[-1-i])
-                    if Algorithm.is_stronger_trick(challengerTrickType, challengerDeterminant, trickType, determinant, state.toBeat.cards, Algorithm.TypeOfFiveCardTrick(strategy[-1-i])):
+                    #print("DEBUG IF I AM ABOUT TO PLAY A FIVE COMPARE TO toBeat")
+                    if Algorithm.is_stronger_trick(challengerTrickType, challengerDeterminant, trickType, determinant, strategy[-1-i], state.toBeat.cards):
                         action = strategy[-i-1]
                         break
         #else: # End Game operation
