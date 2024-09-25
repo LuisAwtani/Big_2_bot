@@ -644,14 +644,9 @@ class Algorithm:
 
         toBeat = state.toBeat
         currentTrick = Algorithm.getCurrentTrickType(toBeat)
-
-        # print("CURRENT TRICK")
-        # print(currentTrick)
         
         allCombinations = Algorithm.getAllCombinations(myHand)
         valid_arrangements = Algorithm.find_trick_arrangements(allCombinations, len(myHand))
-        #print("Random valid arrangement: ")
-        #print(valid_arrangements[random.randint(0, len(valid_arrangements)-1)])
 
         scored_arrangements = Algorithm.score_arrangements(valid_arrangements, copyofMyHand, deadCards, state)
         
@@ -671,7 +666,7 @@ class Algorithm:
        
         strategy = singles + pairs + triples + fives    
 
-
+        lowestUnansweredTricks = Algorithm.lowestUnanswered(state)
         print(f"strategy : {strategy}")
         mustBeForced = []
         potentialControlCards = []
@@ -679,12 +674,13 @@ class Algorithm:
         if len(singles) > 0:
             for i in range(len(singles)):
                 Sval = Algorithm.Srel(singles[i][0], deadCards, copyofMyHand)
-                if Sval == 0:
+                if Sval <= 0:
                     controlCards.append(singles[i])
-                elif Sval < 4:
+                elif Sval < 4 and (51 - len(deadCards) - len(copyofMyHand)):
                     potentialControlCards.append(singles[i])
-                elif Sval >= (39 - len(deadCards) - 4):
+                elif Sval >= (39 - len(deadCards) - 5):
                     mustBeForced.append(singles[i])
+
 
         if len(pairs) > 0:
             #print(f"My first pair has S value of [stronger, weaker] {Algorithm.SrelTrick(pairs[0], deadCards, copyofMyHand)}")
@@ -696,9 +692,13 @@ class Algorithm:
                     controlCards.append(pairs[i])
                 elif strongerWeaker[0] <= 3:
                     potentialControlCards.append(pairs[i])
-
                 elif strongerWeaker[1] < 3:
                     mustBeForced.append(pairs[i])
+                
+                if Algorithm.is_stronger_pair(pairs[i], lowestUnansweredTricks[1]):
+                    if pairs[i] not in controlCards and pairs[i] not in potentialControlCards:
+                        potentialControlCards.append(pairs[i])
+                        
             
 
         if len(triples) > 0:
@@ -711,13 +711,34 @@ class Algorithm:
                     mustBeForced.append(triples[i])
                 if strongerWeakerThrees[0] <= 5:
                     potentialControlCards.append(triples[i])
+                
+                if Algorithm.is_stronger_triple(triples[i], lowestUnansweredTricks[2]):
+                    if triples[i] not in controlCards:
+                        controlCards.append(triples[i])
+                        if triples[i] in potentialControlCards:
+                            potentialControlCards.remove(triples[i])
+
+        if len(fives) > 0:
+            for i in range(len(fives)):
+                trick1 = Algorithm.TypeOfFiveCardTrick(fives[i])
+                trick2 = Algorithm.TypeOfFiveCardTrick(lowestUnansweredTricks[3])
+                if Algorithm.is_stronger_trick(trick1[0], trick1[1], trick2[0], trick2[1], fives[i], lowestUnansweredTricks[3]):
+                    controlCards.append(fives[i])
+                
+                counter = 0
+                for playerNum in PlayersNotIncludingMe:
+                    if state.players[playerNum].handSize < 5:
+                        counter += 1
+                if counter == 0:
+                    controlCards.append(fives[i])
+
 
 
 
         print(f"These tricks are so weak they must be forced: {mustBeForced}")
         print(f"These tricks might be control cards {potentialControlCards}")
         print(f"These tricks are definetely control cards: {controlCards}")
-        print(f"\nThese were the lowest unanswered tricks played: {Algorithm.lowestUnanswered(state)}")
+        #print(f"\nThese were the lowest unanswered tricks played: {Algorithm.lowestUnanswered(state)}")
 
         if len(strategy) <= 3:
             endgame = True
@@ -760,9 +781,19 @@ class Algorithm:
                     if Algorithm.S(strategy[i][0]) < StoBeat:
                         action = strategy[i]
                         break
+                if len(action) > 0:
+                    if action in potentialControlCards and controlCards:
+                        if len(controlCards[0]) == 1:
+                            print(f"Sparing potential control card {action} for control card {controlCards}")
+                            action = controlCards[0]
             else:
                 if Algorithm.S(copyofMyHand[-1]) < StoBeat: # PLay strongest card if I can
                     action.append(copyofMyHand[-1])
+
+            # If i'm about to play a potential control card, play the control card instead
+            #if action:
+                #if action[0] in potentialControlCards and controlCards:
+                    
 
         elif len(state.toBeat.cards) == 2:
             for i in range(len(singles),len(singles) + len(pairs)):
@@ -793,5 +824,6 @@ class Algorithm:
         #        action = strategy[1]
         #    else:
         #        action = strategy[0]
+
 
         return action, myData

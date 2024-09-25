@@ -95,6 +95,7 @@ class Algorithm:
 
 
     def getAction(self, state: MatchState):
+        print("PLACEHOLDER BOT")
         action = []             # The cards you are playing for this trick
         myData = state.myData   # Communications from the previous iteration
 
