@@ -7,19 +7,20 @@ class Algorithm:
     RANK_ORDER = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4, '8': 5, '9': 6, 'T': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12}
     SUIT_ORDER = {'?': 0, 'D': 1, 'C': 2, 'H': 3, 'S': 4}
     SCORING = {
-        'straight flush': 60,
-        'four-of-a-kind': 55,
-        'full house': 52.5,
-        'flush': 50,
-        'straight': 47.5,
-        'triple': 30,
-        'pair': 20,
-        'single': 0
+        'single': 5,
+        'single_two': 7,
+        'pair': 12,
+        'triple': 18,
+        'straight': 28,
+        'flush': 30,
+        'full house': 35,
+        'four-of-a-kind': 40,
+        'straight flush': 45,
+        'control_use_penalty': 10  # Penalty for using control cards above their control level
     }
 
-
     @staticmethod
-    def sortCards(cards): # returns a list of cards sorted by rank and suit
+    def sortCards(cards):  # Returns a list of cards sorted by rank and suit
         return sorted(cards, key=lambda card: (Algorithm.RANK_ORDER.get(card[0], 99), Algorithm.SUIT_ORDER.get(card[1], 99)))
 
 
@@ -277,6 +278,30 @@ class Algorithm:
 
 
     @staticmethod
+    def isTooFarBehind(players, myPlayerNum):
+        myHandSize = players[myPlayerNum].handSize
+        otherHandSizes = []
+        for i in range(0, 4):
+            if i != myPlayerNum:
+                otherHandSizes.append(players[i].handSize)
+        averageOtherHandSize = sum(otherHandSizes) / len(otherHandSizes)
+        threshold = 3  # Adjust this threshold as needed
+
+        if myHandSize - averageOtherHandSize >= threshold:
+            return True
+        return False
+
+
+    @staticmethod
+    def isOpponentAboutToWin(players, myPlayerNum):
+        for i in range(0, 4):
+            print(players[i].handSize)
+            if players[i].handSize <= 2 and i != myPlayerNum:
+                return True
+        return False
+
+
+    @staticmethod
     def canPlay(organisation, currentTrick):
         if currentTrick[0] == 0:
             return True
@@ -294,20 +319,272 @@ class Algorithm:
 
 
     @staticmethod
-    def getAllScores(allOrganisations, currentTrick):
+    def getRemainingCards(fullDeck, playerHand, gameHistory):
+        # Remove player's hand and played cards from the full deck
+        playedCards = set()
+        for round in gameHistory.gameHistory:
+            for trick in round:
+                playedCards.update(trick.cards)
+        remainingCards = set(fullDeck) - set(playerHand) - playedCards
+        return list(remainingCards)
+
+
+    @staticmethod
+    def isControlSingle(card, remainingCards):
+        cardRank = Algorithm.RANK_ORDER[card[0]]
+        cardSuit = Algorithm.SUIT_ORDER[card[1]]
+        for oppCard in remainingCards:
+            oppRank = Algorithm.RANK_ORDER[oppCard[0]]
+            oppSuit = Algorithm.SUIT_ORDER[oppCard[1]]
+            if oppRank > cardRank:
+                return False
+            elif oppRank == cardRank and oppSuit > cardSuit:
+                return False
+        return True
+
+
+    @staticmethod
+    def isControlPair(pairCards, remainingCards):
+        cardRank = pairCards[0][0]
+        cardRankValue = Algorithm.RANK_ORDER[cardRank]
+        remainingRanks = [card[0] for card in remainingCards]
+        remainingRankCounts = Counter(remainingRanks)
+        for oppRank, count in remainingRankCounts.items():
+            oppRankValue = Algorithm.RANK_ORDER[oppRank]
+            if count >= 2:
+                if oppRankValue > cardRankValue:
+                    return False
+                elif oppRankValue == cardRankValue:
+                    oppSuits = [card[1] for card in remainingCards if card[0] == oppRank]
+                    maxOppSuit = max(Algorithm.SUIT_ORDER[suit] for suit in oppSuits)
+                    maxCardSuit = max(Algorithm.SUIT_ORDER[card[1]] for card in pairCards)
+                    if maxOppSuit > maxCardSuit:
+                        return False
+        return True
+
+
+    @staticmethod
+    def isControlTriple(tripleCards, remainingCards):
+        cardRank = tripleCards[0][0]
+        cardRankValue = Algorithm.RANK_ORDER[cardRank]
+        remainingRanks = [card[0] for card in remainingCards]
+        remainingRankCounts = Counter(remainingRanks)
+        for oppRank, count in remainingRankCounts.items():
+            oppRankValue = Algorithm.RANK_ORDER[oppRank]
+            if count >= 3:
+                if oppRankValue > cardRankValue:
+                    return False
+        return True
+
+
+    @staticmethod
+    def getControlLevels(playerHand, remainingCards):
+        controlLevels = {}
+        for card in playerHand:
+            # Initially, assume the card is not a control
+            controlLevels[card] = None
+            # Check if the card is a control single
+            if Algorithm.isControlSingle(card, remainingCards):
+                controlLevels[card] = 'single'
+
+        # Check for control pairs
+        rankDict = defaultdict(list)
+        for card in playerHand:
+            rankDict[card[0]].append(card)
+        for rank, cards in rankDict.items():
+            if len(cards) >= 2:
+                pairCards = cards[:2]
+                if Algorithm.isControlPair(pairCards, remainingCards):
+                    for card in pairCards:
+                        # Update control level to 'pair' if higher than current
+                        if controlLevels[card] != 'single':
+                            controlLevels[card] = 'pair'
+
+        # Check for control triples
+        for rank, cards in rankDict.items():
+            if len(cards) >= 3:
+                tripleCards = cards[:3]
+                if Algorithm.isControlTriple(tripleCards, remainingCards):
+                    for card in tripleCards:
+                        # Update control level to 'triple' if higher than current
+                        if controlLevels[card] not in ['single', 'pair']:
+                            controlLevels[card] = 'triple'
+
+        return controlLevels
+
+
+    @staticmethod
+    def getAllScores(allOrganisations, currentTrick, gameHistory, playerHand, ignoreControlPenalties=False, mustPlay=False):
         scores = []
+        # Build the full deck
+        ranks = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2']
+        suits = ['D', 'C', 'H', 'S']
+        fullDeck = [rank + suit for rank in ranks for suit in suits]
+
+        # Get remaining cards
+        remainingCards = Algorithm.getRemainingCards(fullDeck, playerHand, gameHistory)
+
+        # Get control levels for each card in the player's hand
+        controlLevels = Algorithm.getControlLevels(playerHand, remainingCards)
+
+        playabilityBonus = 50 if mustPlay else 0
+
         for organisation in allOrganisations:
             score = 0
             for combination in organisation:
-                if combination[1] == 'single':
-                    score += Algorithm.RANK_ORDER[combination[-1][0][0]]
-                    score += (Algorithm.SUIT_ORDER[combination[-1][0][1]] - 1) / 4
+                comboType = combination[1]
+                comboLevel = comboType  # The level at which the combination is played
+                cards = combination[-1]  # List of cards in the combination
+
+                # Base score for the combination
+                if comboType == 'single' and cards[0][0] == '2':
+                    baseScore = Algorithm.SCORING['single_two']
                 else:
-                    score += Algorithm.SCORING[combination[1]]
-            if Algorithm.canPlay(organisation, currentTrick):
-                score += 5
+                    baseScore = Algorithm.SCORING[comboType]
+
+                # Initialize penalty
+                totalPenalty = 0
+
+                if not ignoreControlPenalties:
+                    # Check if any control cards are used above their control level
+                    for card in cards:
+                        controlLevel = controlLevels.get(card)
+                        if controlLevel:
+                            controlLevelValue = Algorithm.COMBO_ORDER[controlLevel]
+                            comboLevelValue = Algorithm.COMBO_ORDER[comboLevel]
+                            if comboLevelValue > controlLevelValue:
+                                # Apply penalty for using control card above its control level
+                                totalPenalty += Algorithm.SCORING['control_use_penalty']
+
+                # Additional penalties for full houses and four-of-a-kind
+                if comboType == 'full house':
+                    # Extract the pair rank
+                    cardRanks = [card[0] for card in cards]
+                    rankCounts = Counter(cardRanks)
+                    pairRank = [rank for rank, count in rankCounts.items() if count == 2][0]
+                    pairRankValue = Algorithm.RANK_ORDER[pairRank]
+                    # Apply penalty based on pair rank
+                    totalPenalty += pairRankValue * 0.5
+                elif comboType == 'four-of-a-kind':
+                    # Extract the kicker rank
+                    cardRanks = [card[0] for card in cards]
+                    rankCounts = Counter(cardRanks)
+                    kickerRank = [rank for rank, count in rankCounts.items() if count == 1][0]
+                    kickerRankValue = Algorithm.RANK_ORDER[kickerRank]
+                    # Apply penalty based on kicker rank
+                    totalPenalty += kickerRankValue * 0.5
+
+                totalComboScore = baseScore - totalPenalty
+                score += totalComboScore
+
+            if mustPlay and Algorithm.canPlay(organisation, currentTrick):
+                score += playabilityBonus
+
             scores.append(score)
         return scores
+
+
+    @staticmethod
+    def getPossibleOpponentPairs(remainingCards):
+        rankCounts = Counter(card[0] for card in remainingCards)
+        opponentPairs = []
+        for rank, count in rankCounts.items():
+            if count >= 2:
+                suits = [card[1] for card in remainingCards if card[0] == rank]
+                for suitPair in combinations(suits, 2):
+                    opponentPairs.append((rank, suitPair))
+        return opponentPairs
+
+
+    @staticmethod
+    def getPossibleOpponentTriples(remainingCards):
+        rankCounts = Counter(card[0] for card in remainingCards)
+        opponentTriples = []
+        for rank, count in rankCounts.items():
+            if count >= 3:
+                suits = [card[1] for card in remainingCards if card[0] == rank]
+                for suitTriple in combinations(suits, 3):
+                    opponentTriples.append((rank, suitTriple))
+        return opponentTriples
+
+
+    @staticmethod
+    def containsControlCards(combination, playerHand, gameHistory):
+        # Build the full deck
+        ranks = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2']
+        suits = ['D', 'C', 'H', 'S']
+        fullDeck = [rank + suit for rank in ranks for suit in suits]
+
+        # Get remaining cards
+        remainingCards = Algorithm.getRemainingCards(fullDeck, playerHand, gameHistory)
+
+        # Get control levels for each card in the player's hand
+        controlLevels = Algorithm.getControlLevels(playerHand, remainingCards)
+
+        # Check if any card in the combination is a control card
+        for card in combination[-1]:
+            if card in controlLevels and controlLevels[card] is not None:
+                return True
+        return False
+
+
+    @staticmethod
+    def getStartOnlyCombinations(bestOrganisation, remainingCards):
+        startOnlyCombinations = []
+
+        # Generate possible opponent combinations
+        opponentSingles = remainingCards
+        opponentPairs = Algorithm.getPossibleOpponentPairs(remainingCards)
+        opponentTriples = Algorithm.getPossibleOpponentTriples(remainingCards)
+        # For five-card combinations, we can generate possible opponent combinations if necessary
+
+        for combination in bestOrganisation:
+            comboType = combination[1]
+            comboRank = combination[2]
+            comboSuit = combination[3]
+            cards = combination[-1]
+
+            canBeatOpponent = False
+
+            if comboType == 'single':
+                for oppCard in opponentSingles:
+                    if Algorithm.RANK_ORDER[comboRank] > Algorithm.RANK_ORDER[oppCard[0]]:
+                        canBeatOpponent = True
+                        break
+                    elif Algorithm.RANK_ORDER[comboRank] == Algorithm.RANK_ORDER[oppCard[0]]:
+                        if Algorithm.SUIT_ORDER[comboSuit] > Algorithm.SUIT_ORDER[oppCard[1]]:
+                            canBeatOpponent = True
+                            break
+
+            elif comboType == 'pair':
+                for oppPair in opponentPairs:
+                    oppRank = oppPair[0]
+                    oppSuits = oppPair[1]
+                    if Algorithm.RANK_ORDER[comboRank] > Algorithm.RANK_ORDER[oppRank]:
+                        canBeatOpponent = True
+                        break
+                    elif Algorithm.RANK_ORDER[comboRank] == Algorithm.RANK_ORDER[oppRank]:
+                        maxComboSuit = max(Algorithm.SUIT_ORDER[card[1]] for card in cards)
+                        maxOppSuit = max(Algorithm.SUIT_ORDER[suit] for suit in oppSuits)
+                        if maxComboSuit > maxOppSuit:
+                            canBeatOpponent = True
+                            break
+
+            elif comboType == 'triple':
+                for oppTriple in Algorithm.getPossibleOpponentTriples(remainingCards):
+                    oppRank = oppTriple[0]
+                    if Algorithm.RANK_ORDER[comboRank] > Algorithm.RANK_ORDER[oppRank]:
+                        canBeatOpponent = True
+                        break
+
+            # For simplicity, we'll consider five-card combinations as always potentially playable
+            else:
+                canBeatOpponent = True
+
+            if not canBeatOpponent:
+                startOnlyCombinations.append(combination)
+
+        return startOnlyCombinations
 
 
     def getAction(Algorithm, state: MatchState):
@@ -316,7 +593,7 @@ class Algorithm:
 
         # TODO Write your algorithm logic here
 
-        print("LEXICON V6 MODEL")
+        print("LEXICON FINAL MODEL")
 
         hand = state.myHand
         hand = Algorithm.sortCards(hand)
@@ -328,7 +605,13 @@ class Algorithm:
 
         currentTrick = Algorithm.getCurrentTrickType(state.toBeat)
 
-        allScores = Algorithm.getAllScores(allOrganisations, currentTrick)
+        tooFarBehind = Algorithm.isTooFarBehind(state.players, state.myPlayerNum)
+        opponentAboutToWin = Algorithm.isOpponentAboutToWin(state.players, state.myPlayerNum)
+        print("TooFarBehind: ", tooFarBehind) 
+        print("OpponentAboutToWin: ", opponentAboutToWin)
+        print("PlayerNum: ", state.myPlayerNum)
+
+        allScores = Algorithm.getAllScores(allOrganisations, currentTrick, state.matchHistory[-1], hand, ignoreControlPenalties=opponentAboutToWin, mustPlay=tooFarBehind)
         # print(allScores)
         # print(max(allScores))
 
@@ -343,52 +626,89 @@ class Algorithm:
                 temp.append(combination)
         bestOrganisation = temp
         print(bestOrganisation)
-        
-        if currentTrick[0] == 0:
-            for combination in bestOrganisation:
-                if '3D' in combination[-1]:
-                    action = combination[-1]
-                    break
-            if action == []:
-                for combination in bestOrganisation:
-                    if combination[0] == 5:
-                        action = combination[-1]
-                        break
-            if action == []:
-                for combination in bestOrganisation:
-                    if combination[0] == 3:
-                        action = combination[-1]
-                        break
-            if action == []:
-                for combination in bestOrganisation:
-                    if combination[0] == 2:
-                        action = combination[-1]
-                        break
-            if action == []:
-                for combination in bestOrganisation:
-                    if combination[0] == 1:
-                        action = combination[-1]
-                        break
 
-        else:
-            for combination in bestOrganisation:
-                if combination[0] == currentTrick[0]:
-                    if Algorithm.COMBO_ORDER[combination[1]] == Algorithm.COMBO_ORDER[currentTrick[1]]:
-                        if Algorithm.RANK_ORDER[combination[2]] > Algorithm.RANK_ORDER[currentTrick[2]]:
+        ranks = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2']
+        suits = ['D', 'C', 'H', 'S']
+        fullDeck = [rank + suit for rank in ranks for suit in suits]
+        remainingCards = Algorithm.getRemainingCards(fullDeck, hand, state.matchHistory[-1])
+
+        # Get combinations that can only be played when starting
+        startOnlyCombinations = Algorithm.getStartOnlyCombinations(bestOrganisation, remainingCards)
+        
+        resistPlayingControl = False
+        if not startOnlyCombinations:
+            resistPlayingControl = True
+
+        if not opponentAboutToWin:
+            if currentTrick[0] == 0:
+                for combination in bestOrganisation:
+                    if '3D' in combination[-1]:
+                        action = combination[-1]
+                        break
+                if action == []:
+                    if startOnlyCombinations != []:
+                        action = startOnlyCombinations[0][-1]
+                        print("Start Only Combination")
+                if action == []:
+                    for combination in bestOrganisation:
+                        if combination[0] == 5:
                             action = combination[-1]
                             break
-                        elif Algorithm.RANK_ORDER[combination[2]] == Algorithm.RANK_ORDER[currentTrick[2]]:
-                            if combination[1] == 'flush':
-                                result = Algorithm.compareFlushes(combination[-1], Algorithm.sortCards(state.toBeat.cards))
-                                if result == 1:
-                                    action = combination[-1]
-                                    break
-                            else:
-                                if Algorithm.SUIT_ORDER[combination[3]] > Algorithm.SUIT_ORDER[currentTrick[3]]:
-                                    action = combination[-1]
-                                    break
-                    elif Algorithm.COMBO_ORDER[combination[1]] > Algorithm.COMBO_ORDER[currentTrick[1]]:
-                        action = combination[-1]
-                        break
+                if action == []:
+                    for combination in bestOrganisation:
+                        if combination[0] == 3:
+                            action = combination[-1]
+                            break
+                if action == []:
+                    for combination in bestOrganisation:
+                        if combination[0] == 2:
+                            action = combination[-1]
+                            break
+                if action == []:
+                    for combination in bestOrganisation:
+                        if combination[0] == 1:
+                            action = combination[-1]
+                            break
+            else:
+                for combination in bestOrganisation:
+                    if resistPlayingControl and Algorithm.containsControlCards(combination, hand, state.matchHistory[-1]):
+                        continue
+                    if combination[0] == currentTrick[0]:
+                        if Algorithm.COMBO_ORDER[combination[1]] == Algorithm.COMBO_ORDER[currentTrick[1]]:
+                            if Algorithm.RANK_ORDER[combination[2]] > Algorithm.RANK_ORDER[currentTrick[2]]:
+                                action = combination[-1]
+                                break
+                            elif Algorithm.RANK_ORDER[combination[2]] == Algorithm.RANK_ORDER[currentTrick[2]]:
+                                if combination[1] == 'flush':
+                                    result = Algorithm.compareFlushes(combination[-1], Algorithm.sortCards(state.toBeat.cards))
+                                    if result == 1:
+                                        action = combination[-1]
+                                        break
+                                else:
+                                    if Algorithm.SUIT_ORDER[combination[3]] > Algorithm.SUIT_ORDER[currentTrick[3]]:
+                                        action = combination[-1]
+                                        break
+                        elif Algorithm.COMBO_ORDER[combination[1]] > Algorithm.COMBO_ORDER[currentTrick[1]]:
+                            action = combination[-1]
+                            break
+        else:
+            if currentTrick[0] == 0:
+                action = bestOrganisation[-1][-1]
+            else:
+                for combination in bestOrganisation:
+                    if combination[0] == currentTrick[0]:
+                        if Algorithm.COMBO_ORDER[combination[1]] == Algorithm.COMBO_ORDER[currentTrick[1]]:
+                            if Algorithm.RANK_ORDER[combination[2]] > Algorithm.RANK_ORDER[currentTrick[2]]:
+                                action = combination[-1]
+                            elif Algorithm.RANK_ORDER[combination[2]] == Algorithm.RANK_ORDER[currentTrick[2]]:
+                                if combination[1] == 'flush':
+                                    result = Algorithm.compareFlushes(combination[-1], Algorithm.sortCards(state.toBeat.cards))
+                                    if result == 1:
+                                        action = combination[-1]
+                                else:
+                                    if Algorithm.SUIT_ORDER[combination[3]] > Algorithm.SUIT_ORDER[currentTrick[3]]:
+                                        action = combination[-1]
+                        elif Algorithm.COMBO_ORDER[combination[1]] > Algorithm.COMBO_ORDER[currentTrick[1]]:
+                            action = combination[-1]
 
         return action, myData
