@@ -4,7 +4,7 @@ from itertools import combinations, product
 import random
 import math
 
-missedFiveFLag = False
+
 trick_rank = {
     'straight': 0,
     'flush': 1,
@@ -364,24 +364,23 @@ class Algorithm:
             return aboveInputRank, belowInputRank
         
         elif len(trick) == 5:
-            if not missedFiveFLag:
-                trickDetails = Algorithm.TypeOfFiveCardTrick(trick)
-                if trickDetails[0] == 'straight':
-                    # If the straight is Jack and lower, it's a codependency
-                    if Algorithm.S(trickDetails[1]) >= 13:
-                        return 4, 0
-                    else:
-                        return 4, 1
-                elif trickDetails[0] == 'flush':
-                    # flushes below jack 
-                    return 3, 1
-                elif trickDetails[0] == 'full house':
-                    return 1, 1
-                # Assume fours and straight flush are unbeatable
+ 
+            trickDetails = Algorithm.TypeOfFiveCardTrick(trick)
+            if trickDetails[0] == 'straight':
+                # If the straight is Jack and lower, it's a codependency
+                if Algorithm.S(trickDetails[1]) >= 13:
+                    return 4, 0
                 else:
-                    return 0, 3
+                    return 4, 1
+            elif trickDetails[0] == 'flush':
+                # flushes below jack 
+                return 3, 1
+            elif trickDetails[0] == 'full house':
+                return 1, 1
+            # Assume fours and straight flush are unbeatable
             else:
-                return 1, 0
+                return 0, 3
+
 
     
     def get_rank(Algorithm, card):
@@ -629,6 +628,8 @@ class Algorithm:
         return myPlayerNum, PlayersNotIncludingMe
 
     def getAction(Algorithm, state: MatchState):
+
+
         action = []             # The cards you are playing for this trick
         myData = state.myData   # Communications from the previous iteration
         print("MysticV3 MODEL")
@@ -748,10 +749,11 @@ class Algorithm:
                     if fives[i] not in mustBeForced:
                         mustBeForced.append(fives[i])
             # All fives must be forced if we missed a 5 card trick round
-            if missedFiveFLag is True:
-                for trick in fives:
-                    if trick not in mustBeForced:
-                        mustBeForced.append(trick)
+            if fiverRounds > 0 and state.toBeat is not None:
+                if len(state.toBeat.cards) != 5:
+                    for trick in fives:
+                        if trick not in mustBeForced:
+                            mustBeForced.append(trick)
 
                 
         print(f"These tricks are so weak they must be forced: {mustBeForced}")
@@ -833,9 +835,12 @@ class Algorithm:
                     break
             # consider breaking up full house in case of loss aversion    
             if loss_aversion is True:
+                print("Pair loss aversion")
                 if len(action) == 0:
                     toUse = singles + triples
+                    print(f"Cards to use {toUse}")
                     ExtraPairs = Algorithm.findPairs(toUse)
+                    print(f"Extra pairs found: {ExtraPairs}")
                     if len(ExtraPairs) == 0:
                         toUse = singles + triples + fives
                         ExtraPairs = Algorithm.findPairs(toUse)
@@ -866,7 +871,5 @@ class Algorithm:
                     if Algorithm.is_stronger_trick(challengerTrickType, challengerDeterminant, trickType, determinant, strategy[-1-i], state.toBeat.cards):
                         action = strategy[-i-1]
                         break
-            if len(action) == 0:
-                missedFiveFLag = True
 
         return action, myData
