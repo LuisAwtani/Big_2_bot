@@ -4,6 +4,7 @@ from itertools import combinations, product
 import random
 import math
 
+missedFiveFLag = False
 trick_rank = {
     'straight': 0,
     'flush': 1,
@@ -362,23 +363,25 @@ class Algorithm:
                         aboveInputRank += 1
             return aboveInputRank, belowInputRank
         
-        # TODO: introduce memory, remember lowest unbeaten move!
         elif len(trick) == 5:
-            trickDetails = Algorithm.TypeOfFiveCardTrick(trick)
-            if trickDetails[0] == 'straight':
-                # If the straight is Jack and lower, it's a codependency
-                if Algorithm.S(trickDetails[1]) >= 13:
-                    return 4, 0
+            if not missedFiveFLag:
+                trickDetails = Algorithm.TypeOfFiveCardTrick(trick)
+                if trickDetails[0] == 'straight':
+                    # If the straight is Jack and lower, it's a codependency
+                    if Algorithm.S(trickDetails[1]) >= 13:
+                        return 4, 0
+                    else:
+                        return 4, 1
+                elif trickDetails[0] == 'flush':
+                    # flushes below jack 
+                    return 3, 1
+                elif trickDetails[0] == 'full house':
+                    return 1, 1
+                # Assume fours and straight flush are unbeatable
                 else:
-                    return 4, 1
-            elif trickDetails[0] == 'flush':
-                # flushes below jack 
-                return 3, 1
-            elif trickDetails[0] == 'full house':
-                return 1, 1
-            # Assume fours and straight flush are unbeatable
+                    return 0, 3
             else:
-                return 0, 3
+                return 1, 0
 
     
     def get_rank(Algorithm, card):
@@ -628,7 +631,7 @@ class Algorithm:
     def getAction(Algorithm, state: MatchState):
         action = []             # The cards you are playing for this trick
         myData = state.myData   # Communications from the previous iteration
-
+        print("MysticV3 MODEL")
         myPlayerNum, PlayersNotIncludingMe = Algorithm.playerNumbers(state)
         deadCards = Algorithm.countDeadCards(state.matchHistory[-1])
 
@@ -636,8 +639,6 @@ class Algorithm:
         endgame = False
         loss_aversion = False
 
-
-        # TODO Write your algorithm logic here
         myHand = state.myHand
         myHand = Algorithm.sortCards(myHand)
         copyofMyHand = myHand.copy()
@@ -687,9 +688,6 @@ class Algorithm:
 
 
         if len(pairs) > 0:
-            #print(f"My first pair has S value of [stronger, weaker] {Algorithm.SrelTrick(pairs[0], deadCards, copyofMyHand)}")
-            #cardsInGame = [Algorithm.inverseS(s) for s in range(51) if Algorithm.inverseS(s) not in deadCards and Algorithm.inverseS(s) not in copyofMyHand]
-            #print_cards_matrix_debug(cardsInGame)
             for i in range(len(pairs)):
                 strongerWeaker = Algorithm.SrelTrick(pairs[i], deadCards, copyofMyHand)
                 if strongerWeaker[0] <= 1:
@@ -749,23 +747,27 @@ class Algorithm:
                         controlCards.append(fives[i])
                     if fives[i] not in mustBeForced:
                         mustBeForced.append(fives[i])
+            # All fives must be forced if we missed a 5 card trick round
+            if missedFiveFLag is True:
+                for trick in fives:
+                    if trick not in mustBeForced:
+                        mustBeForced.append(trick)
 
                 
-
-
         print(f"These tricks are so weak they must be forced: {mustBeForced}")
         print(f"These tricks might be control cards {potentialControlCards}")
         print(f"These tricks are definetely control cards: {controlCards}")
         #print(f"\nThese were the lowest unanswered tricks played: {Algorithm.lowestUnanswered(state)}")
 
-        if len(controlCards) >= ((len(strategy)-1) / 2):
+        if len(controlCards) >= (len(strategy) / 2):
             endgame = True
-            print("Identified winning combo")
+            print("Identified deterministic winning combo")
+            print(f"{len(strategy)} plays left, {len(controlCards)} are controlCards, {len(potentialControlCards)} are potential controlCards")
         
-        elif len(potentialControlCards) + len(controlCards) >= ((len(strategy)-1) / 2):
+        elif len(potentialControlCards) + len(controlCards) >= ((len(strategy)) / 2):
             endgame = True
-            print("Identified potential winning combo via bluff")
-
+            print("Identified probabilistic winning combo")
+            print(f"{len(strategy)} plays left, {len(controlCards)} are controlCards, {len(potentialControlCards)} are potential controlCards")
 
         for playerNum in PlayersNotIncludingMe:
             if state.players[playerNum].handSize < 3:
@@ -773,9 +775,6 @@ class Algorithm:
                 print(f"ENTERING Loss aversion mode, player {playerNum} has {state.players[playerNum].handSize} cards left")
 
         
-        #for single in singles:
-        #    print(f"There is {Algorithm.Srel(single[0], deadCards, copyofMyHand)} stronger singles than {single} in game \n")
-        #if endgame is False:
         if '3D' in myHand:
             for trick in strategy:
                 if '3D' in trick:
@@ -783,21 +782,30 @@ class Algorithm:
         
         elif state.toBeat is None:
             # Play weakest high order trick
-            for trick in strategy:
-                if len(fives) > 0:
-                    action = strategy[-len(fives)]
-                elif len(triples) > 0:
-                    action = strategy[-len(triples)]
-                elif len(pairs) > 0:
-                    action = strategy[-len(pairs)]
-                else:
-                    if loss_aversion is True:
-                        action = strategy[-1]
+            if len(mustBeForced) > 0:
+                maxlen = 0
+                # PLay the weakest must force of the largest trick type
+                for i in range(len(mustBeForced)):
+                    if len(mustBeForced[i]) > maxlen:
+                        action = mustBeForced[i]
+                        maxlen = len(mustBeForced[i])
+
+
+            else:
+                for trick in strategy:
+                    if len(fives) > 0:
+                        action = strategy[-len(fives)]
+                    elif len(triples) > 0:
+                        action = strategy[-len(triples)]
+                    elif len(pairs) > 0:
+                        action = strategy[-len(pairs)]
                     else:
-                        action = strategy[0]
+                        if loss_aversion is True:
+                            action = strategy[-1]
+                        else:
+                            action = strategy[0]
         
         elif len(state.toBeat.cards) == 1:
-            print(f"This is the {singleRounds} singles round")
             StoBeat = Algorithm.S(state.toBeat.cards[0])
             if loss_aversion is False:
                 for i in range(len(singles)):
@@ -823,14 +831,33 @@ class Algorithm:
                 if Algorithm.is_stronger_pair(strategy[i], state.toBeat.cards):
                     action = strategy[i]
                     break
+            # consider breaking up full house in case of loss aversion    
+            if loss_aversion is True:
+                if len(action) == 0:
+                    toUse = singles + triples
+                    ExtraPairs = Algorithm.findPairs(toUse)
+                    if len(ExtraPairs) == 0:
+                        toUse = singles + triples + fives
+                        ExtraPairs = Algorithm.findPairs(toUse)
+                    for Xtrapair in ExtraPairs:
+                        if Algorithm.is_stronger_pair(Xtrapair, state.toBeat.cards):
+                            action = Xtrapair
+
 
         elif len(state.toBeat.cards) == 3:
             for i in range(len(singles) + len(pairs), len(singles) + len(pairs) + len(triples)):
                 if Algorithm.is_stronger_triple(strategy[i], state.toBeat.cards):
                     action = strategy[i]
-                    break                
+                    break   
+                if loss_aversion is True:
+                    if len(action) == 0:
+                        extraTriples = Algorithm.findTriples(fives)
+                        for triple in extraTriples:
+                            if Algorithm.is_stronger_triple(triple, state.toBeat.cards):
+                                action = triple             
 
         elif len(state.toBeat.cards) == 5:
+            print(f"This is the {fiverRounds} fives round")
             if len(fives) > 0:
                 trickType, determinant = Algorithm.TypeOfFiveCardTrick(state.toBeat.cards)
                 for i in range(len(fives)):
@@ -839,5 +866,7 @@ class Algorithm:
                     if Algorithm.is_stronger_trick(challengerTrickType, challengerDeterminant, trickType, determinant, strategy[-1-i], state.toBeat.cards):
                         action = strategy[-i-1]
                         break
+            if len(action) == 0:
+                missedFiveFLag = True
 
         return action, myData
