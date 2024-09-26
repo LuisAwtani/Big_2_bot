@@ -129,19 +129,6 @@ class Algorithm:
                         for pair in pairs:
                             fullHouses.append(list(triple) + list(pair))
         return fullHouses
-    
-        fourOfAKinds = []
-        rankDict = defaultdict(list)
-        for card in hand:
-            rankDict[card[0]].append(card)
-        for rank, cards in rankDict.items():
-            if len(cards) >= 4:
-                quads = list(combinations(cards, 4))
-                remainingCards = [c for c in hand if c[0] != rank]
-                for quad in quads:
-                    for kicker in remainingCards:
-                        fourOfAKinds.append(list(quad) + [kicker])
-        return fourOfAKinds
 
     def findFourOfAKinds(Algorithm, hand):
         fourOfAKinds = []
