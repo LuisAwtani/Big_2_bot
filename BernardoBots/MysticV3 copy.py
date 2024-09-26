@@ -100,7 +100,7 @@ class Algorithm:
 
     def compareFlushes(Algorithm, flush1, flush2):
         flush1_sorted = sorted(flush1, key=lambda card: Algorithm.RANK_ORDER[card[0]], reverse=True)
-        flush2_sorted = sorted(flush2, key=lambda card: Algorithm.RANK_ORDER[card[1]], reverse=True)
+        flush2_sorted = sorted(flush2, key=lambda card: Algorithm.RANK_ORDER[card[0]], reverse=True)
         flush1 = flush1_sorted
         flush2 = flush2_sorted
         for i in range(4, -1, -1):
