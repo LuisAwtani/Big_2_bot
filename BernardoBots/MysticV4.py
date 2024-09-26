@@ -610,6 +610,7 @@ class Algorithm:
                                 if len(controlTricks[i]) == len(nonControlTrick):
                                     matches.append([nonControlTrick, controlTricks[i]])
                                     controlTrickUsed.append(i)
+                                    break
                     if len(matches) >= len(nonControlTricks) - 1:
                         winningSequence = []
                         found = False
@@ -819,7 +820,7 @@ class Algorithm:
  
         print(f"These tricks are so weak they must be forced: {mustBeForced}")
         print(f"These tricks might be control cards {potentialControlCards}")
-        print(f"These tricks are definetely control cards: {controlCards}")
+        print(f"These tricks are definitely control cards: {controlCards}")
         #print(f"\nThese were the lowest unanswered tricks played: {Algorithm.lowestUnanswered(state)}")
 
         if len(controlCards) >= (len(strategy) / 2):
@@ -944,6 +945,6 @@ class Algorithm:
 
         if endgame is True:
             if winningSequence[0] is True:
-                print(f"Commiting to winning sequence: {winningSequence}")
+                print(f"Committing to winning sequence: {winningSequence}")
                 action = winningSequence[1][0]
         return action, myData
