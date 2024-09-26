@@ -523,6 +523,13 @@ class Algorithm:
         playersNotIncludingMe = [playerAfterMe, playerOppositeMe, playerBeforeMe]
         return myPlayerNum, playersNotIncludingMe
 
+    ## Bernardo: Please write canBeat function here! Thank you!
+    def canBeat(Algorithm, trick: list[str], currentTrick: list[str]):
+        # Check if the trick can beat the current trick
+        # Return False if the tricks are of different lengths
+        # If tricks are of same length, return True if the trick can beat the current trick, and False otherwise
+        return True
+
     # First, pass the current trick on the table as a list of cards.
     # Then, pass the list of non-control tricks and control tricks, where each trick is a list of cards of length 1, 2, 3, or 5.
     # The function returns a boolean indicating whether a winning sequence was found, and the winning sequence if it exists.
@@ -543,7 +550,7 @@ class Algorithm:
                         if len(nonControlTricks) == len(controlTricks) + 1: # NCNCNCN
                             for i in range(len(matches)):
                                 nonControlTrick = matches[i][0]
-                                if canBeat(nonControlTrick, currentTrick): # THEY MAY BE OF DIFFERENT LENGTHS!
+                                if Algorithm.canBeat(nonControlTrick, currentTrick): # THEY MAY BE OF DIFFERENT LENGTHS!
                                     matches[i], matches[0] = matches[0], matches[i]
                                     found = True
                                     break
@@ -559,7 +566,7 @@ class Algorithm:
                         elif len(nonControlTricks) == len(controlTricks): # NCNCCN or CNCNCN
                             for i in range(len(matches)):
                                 controlTrick = matches[i][1]
-                                if canBeat(controlTrick, currentTrick):
+                                if Algorithm.canBeat(controlTrick, currentTrick):
                                     matches[i], matches[0] = matches[0], matches[i]
                                     found = True
                                     break
@@ -572,7 +579,7 @@ class Algorithm:
                                 return True, winningSequence
                             for i in range(len(matches)):
                                 nonControlTrick = matches[i][0]
-                                if canBeat(nonControlTrick, currentTrick):
+                                if Algorithm.canBeat(nonControlTrick, currentTrick):
                                     matches[i], matches[0] = matches[0], matches[i]
                                     found = True
                                     break
@@ -586,7 +593,7 @@ class Algorithm:
                         else: # CCCCNCNC or NCCCCCNC
                             for controlTrick in controlTricks:
                                 if controlTrick not in controlTrickUsed:
-                                    if canBeat(controlTrick, currentTrick):
+                                    if Algorithm.canBeat(controlTrick, currentTrick):
                                         controlTrickUsed.append(controlTrick)
                                         winningSequence.append(controlTrick)
                                         found = True
@@ -602,7 +609,7 @@ class Algorithm:
                                 return True, winningSequence
                             for i in range(len(matches)):
                                 nonControlTrick = matches[i][0]
-                                if canBeat(nonControlTrick, currentTrick):
+                                if Algorithm.canBeat(nonControlTrick, currentTrick):
                                     matches[i], matches[0] = matches[0], matches[i]
                                     found = True
                                     break
