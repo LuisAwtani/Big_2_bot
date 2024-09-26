@@ -279,10 +279,7 @@ class Algorithm:
             if trick[0][0] == 'A' and syntheticS > 1:
                 return 1, quantityOfWeakerPairs // 3
             else:
-                if syntheticS > 3:
-                    return syntheticS, quantityOfWeakerPairs // 3
-                else:
-                    return syntheticS, quantityOfWeakerPairs // 3
+                return syntheticS, quantityOfWeakerPairs // 3
                 # S represents how many stronger pairs are in the game
      
         elif len(trick) == 3:
