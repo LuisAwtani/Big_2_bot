@@ -523,13 +523,12 @@ class Algorithm:
         playersNotIncludingMe = [playerAfterMe, playerOppositeMe, playerBeforeMe]
         return myPlayerNum, playersNotIncludingMe
 
-    # pass a list of tricks for nonControlTricks and controlTricks, where each trick is a list of cards (str).
-    # returns True if the nonControlTricks can be matched with the controlTricks and hence a winning sequence exists, False otherwise
-    # along with the boolean, it also returns a list of matched tricks. Each element in the list is a list of two tricks, one from nonControlTricks and one from controlTricks
-    def checkForWinningSequence(Algorithm, nonControlTricks: list[list[str]], controlTricks: list[list[str]]):
+    # First, pass the current trick on the table as a list of cards.
+    # Then, pass the list of non-control tricks and control tricks, where each trick is a list of cards of length 1, 2, 3, or 5.
+    # The function returns a boolean indicating whether a winning sequence was found, and the winning sequence if it exists.
+    def checkForWinningSequence(Algorithm, currentTrick, nonControlTricks: list[list[str]], controlTricks: list[list[str]]):
             if len(controlTricks) >= len(nonControlTricks) - 1:
                 # try to match up one control trick with one non control trick of the same trick length
-                    matchedCount = 0
                     matches = []
                     controlTrickUsed = []
                     for nonControlTrick in nonControlTricks:
@@ -537,14 +536,88 @@ class Algorithm:
                             if i not in controlTrickUsed:
                                 if len(controlTricks[i]) == len(nonControlTrick):
                                     matches.append([nonControlTrick, controlTricks[i]])
-                                    matchedCount += 1
                                     controlTrickUsed.append(i)
-                    if matchedCount == len(nonControlTricks) - 1:
-                        return True, matches
-                    else:
-                        return False, []
-            else:
-                return False
+                    if len(matches) >= len(nonControlTricks) - 1:
+                        winningSequence = []
+                        found = False
+                        if len(nonControlTricks) == len(controlTricks) + 1: # NCNCNCN
+                            for i in range(len(matches)):
+                                nonControlTrick = matches[i][0]
+                                if canBeat(nonControlTrick, currentTrick): # THEY MAY BE OF DIFFERENT LENGTHS!
+                                    matches[i], matches[0] = matches[0], matches[i]
+                                    found = True
+                                    break
+                            if found:
+                                for match in matches:
+                                    winningSequence.append(match[0])
+                                    winningSequence.append(match[1])
+                                for nonControlTrick in nonControlTricks:
+                                    if nonControlTrick not in winningSequence:
+                                        winningSequence.append(nonControlTrick)
+                                return True, winningSequence
+                    
+                        elif len(nonControlTricks) == len(controlTricks): # NCNCCN or CNCNCN
+                            for i in range(len(matches)):
+                                controlTrick = matches[i][1]
+                                if canBeat(controlTrick, currentTrick):
+                                    matches[i], matches[0] = matches[0], matches[i]
+                                    found = True
+                                    break
+                            if found:
+                                winningSequence.append(matches[0][1])
+                                for i in range(1, len(matches)):
+                                    winningSequence.append(matches[i][0])
+                                    winningSequence.append(matches[i][1])
+                                winningSequence.append(matches[0][0])
+                                return True, winningSequence
+                            for i in range(len(matches)):
+                                nonControlTrick = matches[i][0]
+                                if canBeat(nonControlTrick, currentTrick):
+                                    matches[i], matches[0] = matches[0], matches[i]
+                                    found = True
+                                    break
+                            if found:
+                                for match in matches:
+                                    winningSequence.append(match[0])
+                                    winningSequence.append(match[1])
+                                winningSequence[-2], winningSequence[-1] = winningSequence[-1], winningSequence[-2]
+                                return True, winningSequence
+
+                        else: # CCCCNCNC or NCCCCCNC
+                            for controlTrick in controlTricks:
+                                if controlTrick not in controlTrickUsed:
+                                    if canBeat(controlTrick, currentTrick):
+                                        controlTrickUsed.append(controlTrick)
+                                        winningSequence.append(controlTrick)
+                                        found = True
+                                        break
+                            if found:
+                                for controlTrick in controlTricks:
+                                    if controlTrick not in controlTrickUsed:
+                                        controlTrickUsed.append(controlTrick)
+                                        winningSequence.append(controlTrick)
+                                for match in matches:
+                                    winningSequence.append(match[0])
+                                    winningSequence.append(match[1])
+                                return True, winningSequence
+                            for i in range(len(matches)):
+                                nonControlTrick = matches[i][0]
+                                if canBeat(nonControlTrick, currentTrick):
+                                    matches[i], matches[0] = matches[0], matches[i]
+                                    found = True
+                                    break
+                            if found:
+                                winningSequence.append(matches[0][0])
+                                winningSequence.append(matches[0][1])
+                                for controlTrick in controlTricks:
+                                    if controlTrick not in controlTrickUsed:
+                                        controlTrickUsed.append(controlTrick)
+                                        winningSequence.append(controlTrick)
+                                for i in range(1, len(matches)):
+                                    winningSequence.append(matches[i][0])
+                                    winningSequence.append(matches[i][1])
+                                return True, winningSequence
+            return False, []
 
     def getAction(Algorithm, state: MatchState):
         action = []             # The cards you are playing for this trick
