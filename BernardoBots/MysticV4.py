@@ -831,7 +831,9 @@ class Algorithm:
             endgame = True
             print("Identified probabilistic winning combo")
             print(f"{len(strategy)} plays left, {len(controlCards)} are controlCards, {len(potentialControlCards)} are potential controlCards")
-
+            non_control_tricks = [trick for trick in strategy if trick not in controlCards and trick not in potentialControlCards]
+            print(Algorithm.checkForWinningSequence(state.toBeat.cards, non_control_tricks, controlCards + potentialControlCards))
+        
         for playerNum in PlayersNotIncludingMe:
             if state.players[playerNum].handSize < 3:
                 lossAversion = True
