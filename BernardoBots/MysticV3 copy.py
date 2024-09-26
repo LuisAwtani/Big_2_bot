@@ -383,7 +383,7 @@ class Algorithm:
             return True
         elif Algorithm.COMBO_ORDER[trick1Type] < Algorithm.COMBO_ORDER[trick2Type]:
             return False
-        if trick1 == 'flush':
+        if trick1Type == 'flush':
             return Algorithm.compareFlushes(trick1, trick2)
         # Compare card values first
         if Algorithm.S(trick1Strongest) < Algorithm.S(trick2Strongest):
@@ -527,12 +527,43 @@ class Algorithm:
         playersNotIncludingMe = [playerAfterMe, playerOppositeMe, playerBeforeMe]
         return myPlayerNum, playersNotIncludingMe
 
-    ## Bernardo: Please write canBeat function here! Thank you!
+    ## TODO: Bernardo: Please write canBeat function here! Thank you!
     def canBeat(Algorithm, trick: list[str], currentTrick: list[str]):
         # Check if the trick can beat the current trick
         # Return False if the tricks are of different lengths
         # If tricks are of same length, return True if the trick can beat the current trick, and False otherwise
-        return True
+        challengerLen = len(trick)
+        championLen = len(currentTrick)
+        if challengerLen != championLen:
+            return False
+        else:
+            # If they're both singles, check stronger (lower) S value
+            if championLen == 1:
+                if Algorithm.S(trick[0]) < Algorithm.S(currentTrick[0]):
+                    return True
+                else:
+                    return False
+            #if they're both pairs
+            elif championLen == 2:
+                if Algorithm.isStrongerPair(trick, currentTrick):
+                    return True
+                else:
+                    return False
+            #if they're both triples
+            elif championLen == 3:
+                if Algorithm.isStrongerTriple(trick, currentTrick):
+                    return True
+                else:
+                    return False
+            elif championLen == 5:
+                # Determinant refers to the strongest (determining) card in that trick
+                challengerTrickType, challengerDeterminant = Algorithm.typeOfFiveCardTrick(trick)
+                championTrickType, championDeterminant = Algorithm.typeOfFiveCardTrick(currentTrick)
+                if Algorithm.isStrongerTrick(challengerTrickType, challengerDeterminant, championTrickType, championDeterminant, trick, currentTrick):
+                    return True
+            # No else branch, please notify me if we get return NoneType bug
+                else:
+                    return False
 
     # First, pass the current trick on the table as a list of cards.
     # Then, pass the list of non-control tricks and control tricks, where each trick is a list of cards of length 1, 2, 3, or 5.
