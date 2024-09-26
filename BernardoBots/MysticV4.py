@@ -600,6 +600,15 @@ class Algorithm:
     # Then, pass the list of non-control tricks and control tricks, where each trick is a list of cards of length 1, 2, 3, or 5.
     # The function returns a boolean indicating whether a winning sequence was found, and the winning sequence if it exists.
     def checkForWinningSequence(Algorithm, currentTrick, nonControlTricks: list[list[str]], controlTricks: list[list[str]]):
+            gameStart = False
+            for nonControlTrick in nonControlTricks:
+                if '3D' in nonControlTrick:
+                    gameStart = True
+                    break
+            for controlTrick in controlTricks:
+                if '3D' in controlTrick:
+                    gameStart = True
+                    break
             if len(controlTricks) >= len(nonControlTricks) - 1:
                 # try to match up one control trick with one non control trick of the same trick length
                     matches = []
@@ -618,9 +627,10 @@ class Algorithm:
                             for i in range(len(matches)):
                                 nonControlTrick = matches[i][0]
                                 if currentTrick is None or Algorithm.canBeat(nonControlTrick, currentTrick):
-                                    matches[i], matches[0] = matches[0], matches[i]
-                                    found = True
-                                    break
+                                    if (gameStart and '3D' in nonControlTrick) or not gameStart:
+                                        matches[i], matches[0] = matches[0], matches[i]
+                                        found = True
+                                        break
                             if found:
                                 for match in matches:
                                     winningSequence.append(match[0])
@@ -634,9 +644,10 @@ class Algorithm:
                             for i in range(len(matches)):
                                 controlTrick = matches[i][1]
                                 if currentTrick is None or Algorithm.canBeat(controlTrick, currentTrick):
-                                    matches[i], matches[0] = matches[0], matches[i]
-                                    found = True
-                                    break
+                                    if (gameStart and '3D' in controlTrick) or not gameStart:
+                                        matches[i], matches[0] = matches[0], matches[i]
+                                        found = True
+                                        break
                             if found:
                                 winningSequence.append(matches[0][1])
                                 for i in range(1, len(matches)):
@@ -647,9 +658,10 @@ class Algorithm:
                             for i in range(len(matches)):
                                 nonControlTrick = matches[i][0]
                                 if currentTrick is None or Algorithm.canBeat(nonControlTrick, currentTrick):
-                                    matches[i], matches[0] = matches[0], matches[i]
-                                    found = True
-                                    break
+                                    if (gameStart and '3D' in nonControlTrick) or not gameStart:
+                                        matches[i], matches[0] = matches[0], matches[i]
+                                        found = True
+                                        break
                             if found:
                                 for match in matches:
                                     winningSequence.append(match[0])
@@ -661,10 +673,11 @@ class Algorithm:
                             for controlTrick in controlTricks:
                                 if controlTrick not in controlTrickUsed:
                                     if currentTrick is None or Algorithm.canBeat(controlTrick, currentTrick):
-                                        controlTrickUsed.append(controlTrick)
-                                        winningSequence.append(controlTrick)
-                                        found = True
-                                        break
+                                        if (gameStart and '3D' in controlTrick) or not gameStart:
+                                            controlTrickUsed.append(controlTrick)
+                                            winningSequence.append(controlTrick)
+                                            found = True
+                                            break
                             if found:
                                 for controlTrick in controlTricks:
                                     if controlTrick not in controlTrickUsed:
@@ -677,9 +690,10 @@ class Algorithm:
                             for i in range(len(matches)):
                                 nonControlTrick = matches[i][0]
                                 if currentTrick is None or Algorithm.canBeat(nonControlTrick, currentTrick):
-                                    matches[i], matches[0] = matches[0], matches[i]
-                                    found = True
-                                    break
+                                    if (gameStart and '3D' in nonControlTrick) or not gameStart:
+                                        matches[i], matches[0] = matches[0], matches[i]
+                                        found = True
+                                        break
                             if found:
                                 winningSequence.append(matches[0][0])
                                 winningSequence.append(matches[0][1])
