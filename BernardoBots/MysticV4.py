@@ -99,6 +99,8 @@ class Algorithm:
         return flushes
 
     def compareFlushes(Algorithm, flush1, flush2):
+        flush1 = Algorithm.sortCards(flush1)
+        flush2 = Algorithm.sortCards(flush2)
         print("Comparing flushes...")
         print("Flush 1: ", flush1)
         print("Flush 2: ", flush2)
