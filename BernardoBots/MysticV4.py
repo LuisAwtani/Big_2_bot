@@ -711,7 +711,7 @@ class Algorithm:
         myPlayerNum, PlayersNotIncludingMe = Algorithm.playerNumbers(state)
         deadCards = Algorithm.countDeadCards(state.matchHistory[-1])
 
-        if myData is not "" and myData is not None:
+        if myData != "" and myData is not None:
             print(f"Previous data: {myData}")
             # Step 1: Remove the brackets (the first and last characters)
             myData = myData[1:-1]
