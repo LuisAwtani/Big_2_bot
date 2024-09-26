@@ -683,6 +683,9 @@ class Algorithm:
                                 for match in matches:
                                     winningSequence.append(match[0])
                                     winningSequence.append(match[1])
+                                for nonControlTrick in nonControlTricks:
+                                    if nonControlTrick not in winningSequence:
+                                        winningSequence.append(nonControlTrick)
                                 return True, winningSequence
                             for i in range(len(matches)):
                                 nonControlTrick = matches[i][0]
@@ -701,39 +704,59 @@ class Algorithm:
                                 for i in range(1, len(matches)):
                                     winningSequence.append(matches[i][0])
                                     winningSequence.append(matches[i][1])
+                                for nonControlTrick in nonControlTricks:
+                                    if nonControlTrick not in winningSequence:
+                                        winningSequence.append(nonControlTrick)
                                 return True, winningSequence
             return False, []
 
     def getAction(Algorithm, state: MatchState):
         action = []             # The cards you are playing for this trick
         myData = state.myData   # Communications from the previous iteration
-        print("MysticV4 Endgame MODEL")
+        print("MysticV4 BUGFIX MODEL")
+        print("My Data: ", myData)
         myPlayerNum, PlayersNotIncludingMe = Algorithm.playerNumbers(state)
         deadCards = Algorithm.countDeadCards(state.matchHistory[-1])
 
         if myData != "" and myData is not None:
             print(f"Previous data: {myData}")
+
             # Step 1: Remove the brackets (the first and last characters)
             myData = myData[1:-1]
 
             # Step 2: Split the string by ', ' and remove quotes around each element
-            myData = myData.split(", ")
+            sublist_strings = myData.split("], [")
 
-            # Step 3: Strip quotes from each element (since they're represented as strings with quotes)
-            myDataAsList = [element.strip("'") for element in myData]
+            # Step 3: Clean up each sublist by removing any extra brackets or quotes and splitting elements
+            myDataAsList = []
+            for sublist_string in sublist_strings:
+                # Remove any remaining square brackets or quotes
+                sublist_string = sublist_string.replace('[', '').replace(']', '')
+                # Split the sublist into individual elements and strip quotes
+                sublist = [element.strip("'") for element in sublist_string.split(", ")]
+                # Append the cleaned sublist to the final list
+                myDataAsList.append(sublist)
+
             print(f"Unstringified data: {myDataAsList}")
 
-            currentTrick = state.toBeat.cards
-            action = myDataAsList[0]
-
-            if Algorithm.canBeat(action, currentTrick):
+            if state.toBeat is None:
+                action = myDataAsList[0]
                 if len(myDataAsList) > 1:
                     myData = str(myDataAsList[1:])
                 else:
                     myData = ""
                 return action, myData
             else:
-                myData = ""
+                currentTrick = state.toBeat.cards
+                if Algorithm.canBeat(myDataAsList[0], currentTrick):
+                    if len(myDataAsList) > 1:
+                        myData = str(myDataAsList[1:])
+                    else:
+                        myData = ""
+                    action = myDataAsList[0]
+                    return action, myData
+                else:
+                    myData = ""
             
         singleRounds, pairRounds, tripleRounds, fiverRounds = Algorithm.countRounds(state.matchHistory[-1].gameHistory)
         endgame = False
@@ -867,7 +890,12 @@ class Algorithm:
                 currentTrick = None
             print("Checking for deterministic winning combo")
             winningSequence = Algorithm.checkForWinningSequence(currentTrick, non_control_tricks, controlCards + potentialControlCards)
-            print(winningSequence)
+            if winningSequence[0] is True:
+                print("Winning sequence found")
+                print("Non-control tricks considered: ", non_control_tricks)
+                print("Control tricks considered: ", controlCards)
+                print("Potential control tricks considered: ", potentialControlCards)
+                print("Winning sequence: ", winningSequence)
             endgame = True
 
         elif len(potentialControlCards) + len(controlCards) >= ((len(strategy)) / 2):
@@ -880,6 +908,12 @@ class Algorithm:
                 currentTrick = None
             print("Checking for probabilistic winning combo")
             winningSequence = Algorithm.checkForWinningSequence(currentTrick, non_control_tricks, controlCards + potentialControlCards)
+            if winningSequence[0] is True:
+                print("Winning sequence found")
+                print("Non-control tricks considered: ", non_control_tricks)
+                print("Control tricks considered: ", controlCards)
+                print("Potential control tricks considered: ", potentialControlCards)
+                print("Winning sequence: ", winningSequence)
             endgame = True
 
         for playerNum in PlayersNotIncludingMe:
@@ -983,5 +1017,8 @@ class Algorithm:
                 print(f"Committing to winning sequence: {winningSequence}")
                 action = winningSequence[1][0]
                 # put the winning sequence in myData except the first element, stringified
-                myData = str(winningSequence[1][1:])
+                if len(winningSequence[1]) > 1:
+                    myData = str(winningSequence[1][1:])
+                else:
+                    myData = ""
         return action, myData
