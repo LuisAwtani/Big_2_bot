@@ -609,7 +609,7 @@ class Algorithm:
                             if i not in controlTrickUsed:
                                 if len(controlTricks[i]) == len(nonControlTrick):
                                     matches.append([nonControlTrick, controlTricks[i]])
-                                    controlTrickUsed.append(i)
+                                    controlTrickUsed.append(controlTricks[i])
                                     break
                     if len(matches) >= len(nonControlTricks) - 1:
                         winningSequence = []
