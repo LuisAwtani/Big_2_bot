@@ -99,19 +99,22 @@ class Algorithm:
         return flushes
 
     def compareFlushes(Algorithm, flush1, flush2):
-        flush1_sorted = sorted(flush1, key=lambda card: Algorithm.RANK_ORDER[card[0]], reverse=True)
-        flush2_sorted = sorted(flush2, key=lambda card: Algorithm.RANK_ORDER[card[0]], reverse=True)
-        flush1 = flush1_sorted
-        flush2 = flush2_sorted
+        print("Comparing flushes...")
+        print("Flush 1: ", flush1)
+        print("Flush 2: ", flush2)
         for i in range(4, -1, -1):
             if Algorithm.RANK_ORDER[flush1[i][0]] > Algorithm.RANK_ORDER[flush2[i][0]]:
-                return 1
+                print("Flush 1 wins")
+                return True
             elif Algorithm.RANK_ORDER[flush1[i][0]] < Algorithm.RANK_ORDER[flush2[i][0]]:
-                return 0
+                print("Flush 2 wins")
+                return False
         if Algorithm.SUIT_ORDER[flush1[0][1]] > Algorithm.SUIT_ORDER[flush2[0][1]]:
-            return 1
+            print("Flush 1 wins")
+            return True
         else:
-            return 0
+            print("Flush 2 wins")
+            return False
 
     def findFullHouses(Algorithm, hand):
         fullHouses = []
