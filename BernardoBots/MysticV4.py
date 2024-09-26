@@ -1,7 +1,6 @@
 from classes import *
 from collections import defaultdict
 from itertools import combinations, product
-import ast
 import math
 
 def print_cards_matrix_debug(CardsInGame):
