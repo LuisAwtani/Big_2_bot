@@ -524,6 +524,8 @@ class Algorithm:
         return myPlayerNum, playersNotIncludingMe
 
     # pass a list of tricks for nonControlTricks and controlTricks, where each trick is a list of cards (str).
+    # returns True if the nonControlTricks can be matched with the controlTricks and hence a winning sequence exists, False otherwise
+    # along with the boolean, it also returns a list of matched tricks. Each element in the list is a list of two tricks, one from nonControlTricks and one from controlTricks
     def checkForWinningSequence(Algorithm, nonControlTricks: list[list[str]], controlTricks: list[list[str]]):
             if len(controlTricks) >= len(nonControlTricks) - 1:
                 # try to match up one control trick with one non control trick of the same trick length
