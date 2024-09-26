@@ -101,9 +101,9 @@ class Algorithm:
     def compareFlushes(Algorithm, flush1, flush2):
         flush1 = Algorithm.sortCards(flush1)
         flush2 = Algorithm.sortCards(flush2)
-        print("Comparing flushes...")
-        print("Flush 1: ", flush1)
-        print("Flush 2: ", flush2)
+        #print("Comparing flushes...")
+        #print("Flush 1: ", flush1)
+        #print("Flush 2: ", flush2)
         for i in range(4, -1, -1):
             if Algorithm.RANK_ORDER[flush1[i][0]] > Algorithm.RANK_ORDER[flush2[i][0]]:
                 print("Flush 1 wins")
@@ -695,7 +695,7 @@ class Algorithm:
     def getAction(Algorithm, state: MatchState):
         action = []             # The cards you are playing for this trick
         myData = state.myData   # Communications from the previous iteration
-        print("MysticV4 MODEL")
+        print("MysticV4 Endgame MODEL")
         myPlayerNum, PlayersNotIncludingMe = Algorithm.playerNumbers(state)
         deadCards = Algorithm.countDeadCards(state.matchHistory[-1])
 
@@ -803,9 +803,9 @@ class Algorithm:
 
                 counter = 0
                 for playerNum in PlayersNotIncludingMe:
-                    if state.players[playerNum].handSize < 5:
+                    if state.players[playerNum].handSize <= 5:
                         counter += 1
-                if counter == 3:
+                if counter >= 2:
                     if fives[i] not in controlCards:
                         controlCards.append(fives[i])
                     if fives[i] not in mustBeForced:
@@ -826,13 +826,24 @@ class Algorithm:
             endgame = True
             print("Identified deterministic winning combo")
             print(f"{len(strategy)} plays left, {len(controlCards)} are controlCards, {len(potentialControlCards)} are potential controlCards")
-        
+            non_control_tricks = [trick for trick in strategy if trick not in controlCards and trick not in potentialControlCards]
+            if state.toBeat is not None:
+                currentTrick = state.toBeat.cards
+            else:
+                currentTrick = None
+            print(Algorithm.checkForWinningSequence(currentTrick, non_control_tricks, controlCards + potentialControlCards))
+
+
         elif len(potentialControlCards) + len(controlCards) >= ((len(strategy)) / 2):
             endgame = True
             print("Identified probabilistic winning combo")
             print(f"{len(strategy)} plays left, {len(controlCards)} are controlCards, {len(potentialControlCards)} are potential controlCards")
             non_control_tricks = [trick for trick in strategy if trick not in controlCards and trick not in potentialControlCards]
-            print(Algorithm.checkForWinningSequence(state.toBeat.cards, non_control_tricks, controlCards + potentialControlCards))
+            if state.toBeat is not None:
+                currentTrick = state.toBeat.cards
+            else:
+                currentTrick = None
+            print(Algorithm.checkForWinningSequence(currentTrick, non_control_tricks, controlCards + potentialControlCards))
         
         for playerNum in PlayersNotIncludingMe:
             if state.players[playerNum].handSize < 3:
