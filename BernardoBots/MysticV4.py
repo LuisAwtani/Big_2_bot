@@ -1,6 +1,7 @@
 from classes import *
 from collections import defaultdict
 from itertools import combinations, product
+import ast
 import math
 
 def print_cards_matrix_debug(CardsInGame):
@@ -714,6 +715,18 @@ class Algorithm:
         myPlayerNum, PlayersNotIncludingMe = Algorithm.playerNumbers(state)
         deadCards = Algorithm.countDeadCards(state.matchHistory[-1])
 
+        if myData is not "" and myData is not None:
+            print(f"Previous data: {myData}")
+            # unstringify the data to obtain a list
+            myData = ast.literal_eval(myData)
+            print(f"Unstringified data: {myData}")
+            action = myData[0]
+            if len(myData) > 1:
+                myData = str(myData[1:])
+            else:
+                myData = ""
+            return action, myData
+            
         singleRounds, pairRounds, tripleRounds, fiverRounds = Algorithm.countRounds(state.matchHistory[-1].gameHistory)
         endgame = False
         lossAversion = False
@@ -961,4 +974,6 @@ class Algorithm:
             if winningSequence[0] is True:
                 print(f"Committing to winning sequence: {winningSequence}")
                 action = winningSequence[1][0]
+                # put the winning sequence in myData except the first element, stringified
+                myData = str(winningSequence[1][1:])
         return action, myData
