@@ -384,33 +384,73 @@ class Algorithm:
         cards2 = set(trick2[-1])
         return not cards1.isdisjoint(cards2)
 
-    def backtrack(Algorithm, tricks, start, currentArrangement, usedCards, totalCards):
-        """Recursive backtracking method to find all valid arrangements."""
-        # Base case: if all cards have been used, yield the arrangement
-        if len(usedCards) == totalCards:
-            yield currentArrangement[:]
-            return
-
-        for i in range(start, len(tricks)):
-            trick = tricks[i]
-            trickCards = set(trick[-1])
-
-            # If the current trick doesn't reuse cards, proceed with recursion
-            if trickCards.isdisjoint(usedCards):
-                # Mark these cards as used and proceed to the next trick
-                currentArrangement.append(trick)
-                usedCards.update(trickCards)
-
-                # Recursively search for the next trick
-                yield from Algorithm.backtrack(tricks, i + 1, currentArrangement, usedCards, totalCards)
-
-                # Backtrack: remove the trick and unmark its cards
-                currentArrangement.pop()
-                usedCards.difference_update(trickCards)
-
-    def findTrickArrangements(Algorithm, tricks, totalCards):
+    def findTrickArrangements(Algorithm, allCombinations, hand):
         """Public method that takes tricks as input and finds all valid arrangements."""
-        return list(Algorithm.backtrack(tricks, 0, [], set(), totalCards))
+        # Step 1: Create card to bit mapping
+        cardToBit = {card: 1 << i for i, card in enumerate(hand)}
+
+        # Step 2: Separate singles and multis
+        singles = [c for c in allCombinations if c[1] == 'single']
+        multis = [c for c in allCombinations if c[1] != 'single']
+
+        # Step 3: Create a mapping from card to single combination for quick lookup
+        singleMap = {c[4][0]: c for c in singles}
+
+        organisations = []
+
+        def backtrack(usedBits, currentOrganisation, startIndex):
+            # If all cards in the hand are used
+            if bin(usedBits).count('1') == len(hand):
+                organisations.append(currentOrganisation.copy())
+                return
+
+            # If we've considered all multis, try to fill the rest with singles
+            if startIndex >= len(multis):
+                # Calculate remaining bits (cards not used)
+                remaining_bits = 0
+                for card, bit in cardToBit.items():
+                    remaining_bits |= bit if card not in singleMap else 0
+                # Count remaining singles
+                remainingCards = [card for card in singleMap if not (usedBits & cardToBit[card])]
+                if bin(usedBits | sum([cardToBit[card] for card in remainingCards])).count('1') == len(hand):
+                    # Add all remaining singles
+                    orgWithSingles = currentOrganisation.copy()
+                    for card in remainingCards:
+                        orgWithSingles.append(singleMap[card])
+                    organisations.append(orgWithSingles)
+                return
+
+            for i in range(startIndex, len(multis)):
+                multi = multis[i]
+                multiBits = 0
+                for card in multi[4]:
+                    multiBits |= cardToBit[card]
+
+                # Check if multi_bits overlap with used_bits
+                if (multiBits & usedBits) == 0:
+                    # Choose this multi
+                    currentOrganisation.append(multi)
+                    usedBits |= multiBits
+
+                    # Recurse with the next combinations
+                    backtrack(usedBits, currentOrganisation, i + 1)
+
+                    # Backtrack
+                    currentOrganisation.pop()
+                    usedBits &= ~multiBits
+
+            # After trying all multis, try to add singles if possible
+            remainingCards = [card for card in singleMap if not (usedBits & cardToBit[card])]
+            if bin(usedBits | sum([cardToBit[card] for card in remainingCards])).count('1') == len(hand):
+                orgWithSingles = currentOrganisation.copy()
+                for card in remainingCards:
+                    orgWithSingles.append(singleMap[card])
+                organisations.append(orgWithSingles)
+
+        # Initialize backtracking with used_bits = 0 (no cards used)
+        backtrack(0, [], 0)
+
+        return organisations
 
     def scoreTrick(Algorithm, trick, copyOfMyHand, deadCards, state: MatchState):
         """Score individual tricks based on the rules provided."""
@@ -514,7 +554,6 @@ class Algorithm:
         playersNotIncludingMe = [playerAfterMe, playerOppositeMe, playerBeforeMe]
         return myPlayerNum, playersNotIncludingMe
 
-    ## TODO: Bernardo: Please write canBeat function here! Thank you!
     def canBeat(Algorithm, trick: list[str], currentTrick: list[str]):
         # Check if the trick can beat the current trick
         # Return False if the tricks are of different lengths
@@ -572,7 +611,7 @@ class Algorithm:
                         if len(nonControlTricks) == len(controlTricks) + 1: # NCNCNCN
                             for i in range(len(matches)):
                                 nonControlTrick = matches[i][0]
-                                if Algorithm.canBeat(nonControlTrick, currentTrick): # THEY MAY BE OF DIFFERENT LENGTHS!
+                                if Algorithm.canBeat(nonControlTrick, currentTrick):
                                     matches[i], matches[0] = matches[0], matches[i]
                                     found = True
                                     break
@@ -662,11 +701,18 @@ class Algorithm:
         myHand = state.myHand
         myHand = Algorithm.sortCards(myHand)
         copyOfMyHand = myHand.copy()
-        # print("MY HAND")
-        # print(myHand)
-        
+
         allCombinations = Algorithm.getAllCombinations(myHand)
-        validArrangements = Algorithm.findTrickArrangements(allCombinations, len(myHand))
+        validArrangements = Algorithm.findTrickArrangements(allCombinations, copyOfMyHand)
+        simplifiedValidArrangements = []
+
+        for arrangement in validArrangements:
+            simplifiedArrangement = []
+            for trick in arrangement:
+                simplifiedArrangement.append(trick[-1])
+            simplifiedValidArrangements.append(simplifiedArrangement)
+
+        print("My Hand: ", myHand)
 
         scoredArrangements = Algorithm.scoreArrangements(validArrangements, copyOfMyHand, deadCards, state)
         
