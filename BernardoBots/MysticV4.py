@@ -717,15 +717,27 @@ class Algorithm:
 
         if myData is not "" and myData is not None:
             print(f"Previous data: {myData}")
-            # unstringify the data to obtain a list
-            myData = ast.literal_eval(myData)
-            print(f"Unstringified data: {myData}")
-            action = myData[0]
-            if len(myData) > 1:
-                myData = str(myData[1:])
+            # Step 1: Remove the brackets (the first and last characters)
+            myData = myData[1:-1]
+
+            # Step 2: Split the string by ', ' and remove quotes around each element
+            myData = myData.split(", ")
+
+            # Step 3: Strip quotes from each element (since they're represented as strings with quotes)
+            myDataAsList = [element.strip("'") for element in myData]
+            print(f"Unstringified data: {myDataAsList}")
+
+            currentTrick = state.toBeat.cards
+            action = myDataAsList[0]
+
+            if Algorithm.canBeat(action, currentTrick):
+                if len(myDataAsList) > 1:
+                    myData = str(myDataAsList[1:])
+                else:
+                    myData = ""
+                return action, myData
             else:
                 myData = ""
-            return action, myData
             
         singleRounds, pairRounds, tripleRounds, fiverRounds = Algorithm.countRounds(state.matchHistory[-1].gameHistory)
         endgame = False
