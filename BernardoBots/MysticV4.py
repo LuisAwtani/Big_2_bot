@@ -616,7 +616,7 @@ class Algorithm:
                         if len(nonControlTricks) == len(controlTricks) + 1: # NCNCNCN
                             for i in range(len(matches)):
                                 nonControlTrick = matches[i][0]
-                                if Algorithm.canBeat(nonControlTrick, currentTrick):
+                                if currentTrick is None or Algorithm.canBeat(nonControlTrick, currentTrick):
                                     matches[i], matches[0] = matches[0], matches[i]
                                     found = True
                                     break
@@ -632,7 +632,7 @@ class Algorithm:
                         elif len(nonControlTricks) == len(controlTricks): # NCNCCN or CNCNCN
                             for i in range(len(matches)):
                                 controlTrick = matches[i][1]
-                                if Algorithm.canBeat(controlTrick, currentTrick):
+                                if currentTrick is None or Algorithm.canBeat(controlTrick, currentTrick):
                                     matches[i], matches[0] = matches[0], matches[i]
                                     found = True
                                     break
@@ -645,7 +645,7 @@ class Algorithm:
                                 return True, winningSequence
                             for i in range(len(matches)):
                                 nonControlTrick = matches[i][0]
-                                if Algorithm.canBeat(nonControlTrick, currentTrick):
+                                if currentTrick is None or Algorithm.canBeat(nonControlTrick, currentTrick):
                                     matches[i], matches[0] = matches[0], matches[i]
                                     found = True
                                     break
@@ -659,7 +659,7 @@ class Algorithm:
                         else: # CCCCNCNC or NCCCCCNC
                             for controlTrick in controlTricks:
                                 if controlTrick not in controlTrickUsed:
-                                    if Algorithm.canBeat(controlTrick, currentTrick):
+                                    if currentTrick is None or Algorithm.canBeat(controlTrick, currentTrick):
                                         controlTrickUsed.append(controlTrick)
                                         winningSequence.append(controlTrick)
                                         found = True
@@ -675,7 +675,7 @@ class Algorithm:
                                 return True, winningSequence
                             for i in range(len(matches)):
                                 nonControlTrick = matches[i][0]
-                                if Algorithm.canBeat(nonControlTrick, currentTrick):
+                                if currentTrick is None or Algorithm.canBeat(nonControlTrick, currentTrick):
                                     matches[i], matches[0] = matches[0], matches[i]
                                     found = True
                                     break
