@@ -823,28 +823,29 @@ class Algorithm:
         #print(f"\nThese were the lowest unanswered tricks played: {Algorithm.lowestUnanswered(state)}")
 
         if len(controlCards) >= (len(strategy) / 2):
-            endgame = True
-            print("Identified deterministic winning combo")
-            print(f"{len(strategy)} plays left, {len(controlCards)} are controlCards, {len(potentialControlCards)} are potential controlCards")
+            #print(f"{len(strategy)} plays left, {len(controlCards)} are controlCards, {len(potentialControlCards)} are potential controlCards")
             non_control_tricks = [trick for trick in strategy if trick not in controlCards and trick not in potentialControlCards]
             if state.toBeat is not None:
                 currentTrick = state.toBeat.cards
             else:
                 currentTrick = None
-            print(Algorithm.checkForWinningSequence(currentTrick, non_control_tricks, controlCards + potentialControlCards))
-
+            print("Checking for deterministic winning combo")
+            winningSequence = Algorithm.checkForWinningSequence(currentTrick, non_control_tricks, controlCards + potentialControlCards)
+            print(winningSequence)
+            endgame = True
 
         elif len(potentialControlCards) + len(controlCards) >= ((len(strategy)) / 2):
-            endgame = True
-            print("Identified probabilistic winning combo")
-            print(f"{len(strategy)} plays left, {len(controlCards)} are controlCards, {len(potentialControlCards)} are potential controlCards")
+
+            #print(f"{len(strategy)} plays left, {len(controlCards)} are controlCards, {len(potentialControlCards)} are potential controlCards")
             non_control_tricks = [trick for trick in strategy if trick not in controlCards and trick not in potentialControlCards]
             if state.toBeat is not None:
                 currentTrick = state.toBeat.cards
             else:
                 currentTrick = None
-            print(Algorithm.checkForWinningSequence(currentTrick, non_control_tricks, controlCards + potentialControlCards))
-        
+            print("Checking for probabilistic winning combo")
+            winningSequence = Algorithm.checkForWinningSequence(currentTrick, non_control_tricks, controlCards + potentialControlCards)
+            endgame = True
+
         for playerNum in PlayersNotIncludingMe:
             if state.players[playerNum].handSize < 3:
                 lossAversion = True
@@ -941,4 +942,8 @@ class Algorithm:
                         action = strategy[-i-1]
                         break
 
+        if endgame is True:
+            if winningSequence[0] is True:
+                print(f"Commiting to winning sequence: {winningSequence}")
+                action = winningSequence[1][0]
         return action, myData
