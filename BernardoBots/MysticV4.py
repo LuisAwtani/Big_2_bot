@@ -615,7 +615,7 @@ class Algorithm:
                     controlTrickUsed = []
                     for nonControlTrick in nonControlTricks:
                         for i in range(len(controlTricks)):
-                            if i not in controlTrickUsed:
+                            if controlTricks[i] not in controlTrickUsed:
                                 if len(controlTricks[i]) == len(nonControlTrick):
                                     matches.append([nonControlTrick, controlTricks[i]])
                                     controlTrickUsed.append(controlTricks[i])
