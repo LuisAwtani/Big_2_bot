@@ -722,7 +722,7 @@ class Algorithm:
     def getAction(Algorithm, state: MatchState):
         action = []             # The cards you are playing for this trick
         myData = state.myData   # Communications from the previous iteration
-        print("Mystic Feng Shui MODEL copy")
+        print("Mystic Feng Shui MODEL copy fixed")
         print("My Data: ", myData)
         myPlayerNum, PlayersNotIncludingMe = Algorithm.playerNumbers(state)
         deadCards = Algorithm.countDeadCards(state.matchHistory[-1])
