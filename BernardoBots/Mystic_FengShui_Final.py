@@ -831,6 +831,8 @@ class Algorithm:
                         strategy.append(tripleInFH + pairs[0])
                         strategy.append(pairInFH)
                         break
+                        myData = ''
+
 
         lowestUnansweredTricks = Algorithm.lowestUnanswered(state)
         print(f"strategy : {strategy}")
