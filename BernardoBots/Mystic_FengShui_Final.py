@@ -602,7 +602,7 @@ class Algorithm:
             controlTricks = sorted(controlTricks, key=len)
             # sort control trick singles by S value, lower S value goes last
             controlTrickSingles = [trick for trick in controlTricks if len(trick) == 1]
-            controlTrickSingles = sorted(controlTrickSingles, key=lambda x: Algorithm.S(x[0]))
+            controlTrickSingles = Algorithm.sortCards(controlTrickSingles)
             controlTrickNonSingles = [trick for trick in controlTricks if len(trick) != 1]
             controlTricks = controlTrickNonSingles + controlTrickSingles
             gameStart = False
