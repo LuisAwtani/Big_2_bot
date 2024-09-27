@@ -653,6 +653,7 @@ class Algorithm:
                                     winningSequence.append(matches[i][1])
                                 winningSequence.append(matches[0][0])
                                 return True, winningSequence
+                            found = False
                             for i in range(len(matches)):
                                 nonControlTrick = matches[i][0]
                                 if currentTrick is None or Algorithm.canBeat(nonControlTrick, currentTrick):
