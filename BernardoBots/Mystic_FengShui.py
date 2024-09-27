@@ -474,6 +474,8 @@ class Algorithm:
             score += Algorithm.SCORING['triple']
         elif type_of_trick == 'pair':
             score += Algorithm.SCORING['pair']
+            # Small amount of bonus points for stronger pair (to avoid strong pair in Full House)
+            score += (1.5*Algorithm.Srel(trick[-1][0], deadCards, copyOfMyHand) / 39)
             
         elif type_of_trick == 'single':
             # Get the Srel value of the card
@@ -713,7 +715,7 @@ class Algorithm:
     def getAction(Algorithm, state: MatchState):
         action = []             # The cards you are playing for this trick
         myData = state.myData   # Communications from the previous iteration
-        print("MysticV4 BUGFIX MODEL")
+        print("Mystic Feng Shui MODEL")
         print("My Data: ", myData)
         myPlayerNum, PlayersNotIncludingMe = Algorithm.playerNumbers(state)
         deadCards = Algorithm.countDeadCards(state.matchHistory[-1])
@@ -1031,7 +1033,13 @@ class Algorithm:
                     if Algorithm.isStrongerTrick(challengerTrickType, challengerDeterminant, trickType, determinant, strategy[-1-i], state.toBeat.cards):
                         action = strategy[-i-1]
                         break
-
+            if len(action) == 0:
+                extraStraights = Algorithm.findStraights(singles)
+                if len(extraStraights) > 0:
+                    xTraType, xTraDeterminant = Algorithm.typeOfFiveCardTrick(extraStraights[0])
+                    if Algorithm.isStrongerTrick(xTraType, xTraDeterminant, trickType, determinant, extraStraights[0], state.toBeat.cards):
+                        action = extraStraights[0]
+                        print("Found extra straight")
         if endgame is True:
             if winningSequence[0] is True:
                 print(f"Committing to winning sequence: {winningSequence}")
