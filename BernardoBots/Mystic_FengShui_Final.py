@@ -598,6 +598,13 @@ class Algorithm:
     # Then, pass the list of non-control tricks and control tricks, where each trick is a list of cards of length 1, 2, 3, or 5.
     # The function returns a boolean indicating whether a winning sequence was found, and the winning sequence if it exists.
     def checkForWinningSequence(Algorithm, currentTrick, nonControlTricks: list[list[str]], controlTricks: list[list[str]]):
+            # sort control tricks by length
+            controlTricks = sorted(controlTricks, key=len)
+            # sort control trick singles by S value, lower S value goes last
+            controlTrickSingles = [trick for trick in controlTricks if len(trick) == 1]
+            controlTrickSingles = sorted(controlTrickSingles, key=lambda x: Algorithm.S(x[0]))
+            controlTrickNonSingles = [trick for trick in controlTricks if len(trick) != 1]
+            controlTricks = controlTrickNonSingles + controlTrickSingles
             gameStart = False
             for nonControlTrick in nonControlTricks:
                 if '3D' in nonControlTrick:
