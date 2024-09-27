@@ -601,10 +601,13 @@ class Algorithm:
             # sort control tricks by length
             controlTricks = sorted(controlTricks, key=len)
             # sort control trick singles by S value, lower S value goes last
-            controlTrickSingles = [trick for trick in controlTricks if len(trick) == 1]
+            controlTrickSingles = [trick[0] for trick in controlTricks if len(trick) == 1]
             controlTrickSingles = Algorithm.sortCards(controlTrickSingles)
+            controlTrickSinglesFinal = []
+            for controlTrickSingle in controlTrickSingles:
+                controlTrickSinglesFinal.append([controlTrickSingle])
             controlTrickNonSingles = [trick for trick in controlTricks if len(trick) != 1]
-            controlTricks = controlTrickNonSingles + controlTrickSingles
+            controlTricks = controlTrickNonSingles + controlTrickSinglesFinal
             gameStart = False
             for nonControlTrick in nonControlTricks:
                 if '3D' in nonControlTrick:
