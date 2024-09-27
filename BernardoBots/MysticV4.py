@@ -37,7 +37,7 @@ class Algorithm:
         'full house': 45,
         'flush': 35,
         'straight': 30,
-        'triple': 20,
+        'triple': 25,
         'pair': 15,
         'single': 1,
         'bad-single-deduction': 10
@@ -928,6 +928,7 @@ class Algorithm:
         
         elif state.toBeat is None:
             # Play weakest high order trick
+            # if we have a high order control trick, play that
             if len(mustBeForced) > 0:
                 maxLen = 0
                 # PLay the weakest must force of the largest trick type
@@ -935,6 +936,19 @@ class Algorithm:
                     if len(mustBeForced[i]) > maxLen:
                         action = mustBeForced[i]
                         maxLen = len(mustBeForced[i])
+                if lossAversion and len(strategy) > 3:
+                    action = strategy[-1]
+                # If we have a high order potential control card (with no low order) play that instead
+                if len(potentialControlCards + controlCards) > 0:
+                    minlen = 6
+                    for tricke in potentialControlCards + controlCards:
+                        if len(tricke) < minlen:
+                            minlen = len(tricke)
+                    if minlen > 1:
+                        for tricke in potentialControlCards + controlCards:
+                            if len(tricke) == minlen:
+                                action = tricke
+
             else:
                 for trick in strategy:
                     if len(fives) > 0:
