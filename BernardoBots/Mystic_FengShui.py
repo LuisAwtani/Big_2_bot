@@ -254,7 +254,8 @@ class Algorithm:
         for deadCard in deadCards:
             if Algorithm.S(deadCard) < Sval:
                 Sval -= 1
-        hand = sorted(copyOfMyHand, reverse=True)
+        hand = sorted(copyOfMyHand, key= lambda x: Algorithm.S(x))
+        print(f"Sorted hand in Srel {hand}")
         hand.remove(card)
         for card in hand:
             if Algorithm.S(card) < Algorithm.S(card):
@@ -475,7 +476,7 @@ class Algorithm:
         elif type_of_trick == 'pair':
             score += Algorithm.SCORING['pair']
             # Small amount of bonus points for stronger pair (to avoid strong pair in Full House)
-            score += (1.5*Algorithm.Srel(trick[-1][0], deadCards, copyOfMyHand) / 39)
+            score += (2.5*Algorithm.Srel(trick[-1][0], deadCards, copyOfMyHand) / 39)
             
         elif type_of_trick == 'single':
             # Get the Srel value of the card
@@ -820,7 +821,7 @@ class Algorithm:
                     controlCards.append(pairs[i])
                 elif strongerWeaker[0] <= 3:
                     potentialControlCards.append(pairs[i])
-                if strongerWeaker[1] < 3:
+                if strongerWeaker[1] < 4:
                     mustBeForced.append(pairs[i])
                 
                 if Algorithm.isStrongerPair(pairs[i], lowestUnansweredTricks[1]):
@@ -918,10 +919,16 @@ class Algorithm:
                 print("Winning sequence: ", winningSequence)
             endgame = True
 
+        tally = 0
         for playerNum in PlayersNotIncludingMe:
             if state.players[playerNum].handSize < 3:
                 lossAversion = True
                 print(f"ENTERING Loss aversion mode, player {playerNum} has {state.players[playerNum].handSize} cards left")
+                if state.players[playerNum].handSize <=3:
+                    tally += 1
+        if tally >= 2 and lossAversion is False:
+            lossAversion = True
+            print(" ENTERING LOSS AVERSION TWO PLAYERS WITH 3 OR LESS CARDS")
 
         if '3D' in myHand:
             for trick in strategy:
@@ -940,22 +947,24 @@ class Algorithm:
                         maxLen = len(mustBeForced[i])
                         
 
-                if lossAversion: # Check that we aren't playing a very weak single
-                    if len(action[0]) == 1:
+                if lossAversion is True: # Check that we aren't playing a very weak single
+                    if len(action) == 1:
+                        print(f"Attepting to prevent foolish loss aversion with {action[0]}")
                         if action[0] in mustBeForced:
                             print("PREVENTING PLAYING VERY WEAK SINGLE")
                             action = strategy[-1]
                     
                 # If we have a high order potential control card (with no low order) play that instead
-                if len(potentialControlCards + controlCards) > 0:
-                    minlen = 6
-                    for tricke in potentialControlCards + controlCards:
-                        if len(tricke) < minlen:
-                            minlen = len(tricke)
-                    if minlen > 1:
+                if len(action) == 0:
+                    if len(potentialControlCards + controlCards) > 0:
+                        minlen = 6
                         for tricke in potentialControlCards + controlCards:
-                            if len(tricke) == minlen:
-                                action = tricke
+                            if len(tricke) < minlen:
+                                minlen = len(tricke)
+                        if minlen > 1:
+                            for tricke in potentialControlCards + controlCards:
+                                if len(tricke) == minlen:
+                                    action = tricke
 
             else:
                 for trick in strategy:
@@ -1001,6 +1010,12 @@ class Algorithm:
                 print("Pair loss aversion")
                 if len(action) == 0:
                     toUse = singles + triples
+                    for fiveCardTrick in fives:
+                        type, deter = Algorithm.typeOfFiveCardTrick(fiveCardTrick)
+                        if type == 'full house':
+                            toUse.extend(fiveCardTrick)
+
+                    toUse = singles + triples
                     print(f"Cards to use {toUse}")
                     extraPairs = Algorithm.findPairs(toUse)
                     print(f"Extra pairs found: {extraPairs}")
@@ -1034,12 +1049,15 @@ class Algorithm:
                         action = strategy[-i-1]
                         break
             if len(action) == 0:
-                extraStraights = Algorithm.findStraights(singles)
-                if len(extraStraights) > 0:
-                    xTraType, xTraDeterminant = Algorithm.typeOfFiveCardTrick(extraStraights[0])
-                    if Algorithm.isStrongerTrick(xTraType, xTraDeterminant, trickType, determinant, extraStraights[0], state.toBeat.cards):
-                        action = extraStraights[0]
-                        print("Found extra straight")
+                if len(singles) >= 5:
+                    singleCards = [single[0] for single in singles]
+                    print(f"Inputting singles: {singleCards}")
+                    extraStraights = Algorithm.findStraights(singleCards)
+                    if len(extraStraights) > 0:
+                        xTraType, xTraDeterminant = Algorithm.typeOfFiveCardTrick(extraStraights[0])
+                        if Algorithm.isStrongerTrick(xTraType, xTraDeterminant, trickType, determinant, extraStraights[0], state.toBeat.cards):
+                            action = extraStraights[0]
+                            print("Found extra straight")
         if endgame is True:
             if winningSequence[0] is True:
                 print(f"Committing to winning sequence: {winningSequence}")
