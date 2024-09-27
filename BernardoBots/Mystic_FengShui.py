@@ -952,6 +952,11 @@ class Algorithm:
                         if action[0] in mustBeForced:
                             print("PREVENTING PLAYING VERY WEAK SINGLE")
                             action = strategy[-1]
+                    elif len(action) == 2:
+                        if action in controlCards:
+                            print("Edge Case loss Aversion pair")
+                            controlPairs = [t for t in controlCards if len(t) == 2]
+                            action = controlPairs[-1]
                     
                 # If we have a high order potential control card (with no low order) play that instead
                 if len(action) == 0:
