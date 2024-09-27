@@ -249,16 +249,14 @@ class Algorithm:
         suitIndex = rating % 4
         return ranks[index] + suits[suitIndex]
 
-    def Srel(Algorithm, card: str, deadCards: set, copyOfMyHand: list):
-        Sval = Algorithm.S(card)
+    def Srel(Algorithm, cardinvestigated: str, deadCards: set, copyOfMyHand: list):
+        Sval = Algorithm.S(cardinvestigated)
         for deadCard in deadCards:
-            if Algorithm.S(deadCard) < Sval:
+            if Algorithm.S(deadCard) < Algorithm.S(cardinvestigated):
                 Sval -= 1
         hand = sorted(copyOfMyHand, key= lambda x: Algorithm.S(x))
-        print(f"Sorted hand in Srel {hand}")
-        hand.remove(card)
-        for card in hand:
-            if Algorithm.S(card) < Algorithm.S(card):
+        for carde in hand:
+            if Algorithm.S(carde) < Algorithm.S(cardinvestigated):
                 Sval -= 1
         return Sval
 
@@ -476,7 +474,7 @@ class Algorithm:
         elif type_of_trick == 'pair':
             score += Algorithm.SCORING['pair']
             # Small amount of bonus points for stronger pair (to avoid strong pair in Full House)
-            score += (2.5*Algorithm.Srel(trick[-1][0], deadCards, copyOfMyHand) / 39)
+            score += (2*Algorithm.S(trick[-1][0]) / 51)
             
         elif type_of_trick == 'single':
             # Get the Srel value of the card
@@ -494,7 +492,7 @@ class Algorithm:
     def scoreArrangements(Algorithm, arrangements, copyOfMyHand, deadCards, state: MatchState):
         """Score the entire arrangement and return them sorted by score."""
         scoredArrangements = []
-
+        #print(f"Dead cards being fed into scoreTrick {deadCards}")
         for arrangement in arrangements:
             totalScore = 0
             trickTypes = set()
@@ -781,6 +779,7 @@ class Algorithm:
 
         print("My Hand: ", myHand)
 
+        #print(f"DeadCards being fed into scoreArrangements {deadCards}")
         scoredArrangements = Algorithm.scoreArrangements(validArrangements, copyOfMyHand, deadCards, state)
         
         # print("The top 3 arrangements: ")
@@ -1054,10 +1053,12 @@ class Algorithm:
                     print(f"Inputting singles: {singleCards}")
                     extraStraights = Algorithm.findStraights(singleCards)
                     if len(extraStraights) > 0:
+                        trickType, determinant = Algorithm.typeOfFiveCardTrick(state.toBeat.cards)
                         xTraType, xTraDeterminant = Algorithm.typeOfFiveCardTrick(extraStraights[0])
                         if Algorithm.isStrongerTrick(xTraType, xTraDeterminant, trickType, determinant, extraStraights[0], state.toBeat.cards):
                             action = extraStraights[0]
                             print("Found extra straight")
+            
         if endgame is True:
             if winningSequence[0] is True:
                 print(f"Committing to winning sequence: {winningSequence}")
