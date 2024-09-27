@@ -474,7 +474,7 @@ class Algorithm:
         elif type_of_trick == 'pair':
             score += Algorithm.SCORING['pair']
             # Small amount of bonus points for stronger pair (to avoid strong pair in Full House)
-            score += (2*Algorithm.S(trick[-1][0]) / 51)
+            score += (2 - (2*Algorithm.S(trick[-1][0]) / 51))
             
         elif type_of_trick == 'single':
             # Get the Srel value of the card
@@ -815,23 +815,6 @@ class Algorithm:
         fives = [trick[4] for trick in scoredArrangements[0][0] if trick[1] != 'triple' and trick[1] != 'pair' and trick[1] != 'single']
        
         strategy = singles + pairs + triples + fives    
-
-        if len(fives) > 0 and len(pairs) > 0:
-            for fiveCardTrick in fives:
-                FHChecker, fhdterminant = Algorithm.typeOfFiveCardTrick(fiveCardTrick)
-                if FHChecker == 'full house':
-                    pairInFH = [indiCard for indiCard in fiveCardTrick if indiCard[0] != fhdterminant[0]]
-                    tripleInFH = [indiCard for indiCard in fiveCardTrick if indiCard[0] == fhdterminant[0]]
-                    print(f"Checking to override full house with {pairs[0]} and {pairInFH[0]}")
-                    #If the weakest pair is weaker, replace
-                    if Algorithm.S(pairs[0][0]) > Algorithm.S(pairInFH[0]):
-                        print("OVERRIDING FULL HOUSE BUG")
-                        strategy.remove(fiveCardTrick)
-                        strategy.remove(pairs[0])
-                        strategy.append(tripleInFH + pairs[0])
-                        strategy.append(pairInFH)
-                        myData = ''
-                        break
                         
 
 
