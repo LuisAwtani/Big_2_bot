@@ -806,20 +806,21 @@ class Algorithm:
        
         strategy = singles + pairs + triples + fives    
 
-        if fives in strategy and pairs in strategy:
+        if len(fives) > 0 and len(pairs) > 0:
             for fiveCardTrick in fives:
                 FHChecker, fhdterminant = Algorithm.typeOfFiveCardTrick(fiveCardTrick)
                 if FHChecker == 'full house':
                     pairInFH = [indiCard for indiCard in fiveCardTrick if indiCard[0] != fhdterminant[0]]
                     tripleInFH = [indiCard for indiCard in fiveCardTrick if indiCard[0] == fhdterminant[0]]
-
+                    #print(f"Checking to override full house with {pairs[0]} and {pairInFH[0]}")
                     #If the weakest pair is weaker, replace
-                    if Algorithm.S(pairs[0][0]) > Algorithm.S(pairInFH[0][0]):
-                        print("OVERRIDING FULL HOUSE BUG")
+                    if Algorithm.S(pairs[0][0]) > Algorithm.S(pairInFH[0]):
+#                        print("OVERRIDING FULL HOUSE")
                         strategy.remove(fiveCardTrick)
                         strategy.remove(pairs[0])
                         strategy.append(tripleInFH + pairs[0])
                         strategy.append(pairInFH)
+                        break
 
         lowestUnansweredTricks = Algorithm.lowestUnanswered(state)
         print(f"strategy : {strategy}")
