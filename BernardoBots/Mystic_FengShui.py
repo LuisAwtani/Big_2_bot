@@ -796,7 +796,23 @@ class Algorithm:
         triples = [trick[4] for trick in scoredArrangements[0][0] if trick[1] == 'triple']
         fives = [trick[4] for trick in scoredArrangements[0][0] if trick[1] != 'triple' and trick[1] != 'pair' and trick[1] != 'single']
        
-        strategy = singles + pairs + triples + fives    
+        strategy = singles + pairs + triples + fives   
+
+        if fives in strategy and pairs in strategy:
+            for fiveCardTrick in fives:
+                FHChecker, fhdterminant = Algorithm.typeOfFiveCardTrick(fiveCardTrick)
+                if FHChecker == 'full house':
+                    pairInFH = [indiCard for indiCard in fiveCardTrick if indiCard[0] != fhdterminant[0]]
+                    tripleInFH = [indiCard for indiCard in fiveCardTrick if indiCard[0] == fhdterminant[0]]
+
+                    #If the weakest pair is weaker, replace
+                    if Algorithm.S(pairs[0][0]) > Algorithm.S(pairInFH[0][0]):
+                        print("OVERRIDING FULL HOUSE BUG")
+                        strategy.remove(fiveCardTrick)
+                        strategy.remove(pairs[0])
+                        strategy.append(tripleInFH + pairs[0])
+                        strategy.append(pairInFH)
+
 
         lowestUnansweredTricks = Algorithm.lowestUnanswered(state)
         print(f"strategy : {strategy}")
@@ -949,7 +965,7 @@ class Algorithm:
                 if lossAversion is True: # Check that we aren't playing a very weak single
                     if len(action) == 1:
                         print(f"Attepting to prevent foolish loss aversion with {action[0]}")
-                        if action[0] in mustBeForced:
+                        if action in mustBeForced:
                             print("PREVENTING PLAYING VERY WEAK SINGLE")
                             action = strategy[-1]
                     elif len(action) == 2:
